@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSMotionUsageDescription</key>
+	<string>Ứng dụng dùng cảm biến chuyển động để đếm bước chân và xác minh hoạt động đi bộ/chạy, kể cả khi app chạy nền hoặc bị đóng.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Ứng dụng dùng vị trí để đo quãng đường và xác minh bạn thực sự di chuyển bằng chân (không phải xe cộ hay GPS giả).</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Cho phép "Luôn luôn" để tiếp tục ghi nhận phiên di chuyển khi màn hình tắt và tự khôi phục phiên nếu ứng dụng bị đóng.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Ứng dụng đọc số bước từ Apple Health để đối chiếu với cảm biến của iPhone và phát hiện dữ liệu nhập tay.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Ứng dụng không ghi dữ liệu vào Apple Health.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.sixpilot.HealthKitExample.refresh</string>
+	</array>
+</dict>
+</plist>

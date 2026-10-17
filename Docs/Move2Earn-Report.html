@@ -1,0 +1,763 @@
+<title>Move2Earn Technical Dossier</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky table of contents on the left, one reading column on the right; stacks on phones. */
+:root {
+  --bg: #f6f7f5;
+  --surface: #ffffff;
+  --ink: #17201d;
+  --muted: #5b6662;
+  --line: #dde2df;
+  --accent: #0f6b5a;
+  --accent-soft: #e1efe9;
+  --warn: #9a5b00;
+  --warn-soft: #fbefd9;
+  --bad: #a3262e;
+  --bad-soft: #f8e1e2;
+  --good: #1d6f3a;
+  --good-soft: #e0f1e5;
+  --info: #285a8f;
+  --info-soft: #e2ecf7;
+  --code-bg: #eef1ef;
+  --f-display: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111715; --surface: #18201d; --ink: #e5ebe8; --muted: #9aa8a3; --line: #2a3531;
+    --accent: #5cc4a9; --accent-soft: #173029; --warn: #e3a64a; --warn-soft: #33270f;
+    --bad: #f07a80; --bad-soft: #3a1a1d; --good: #6fcf8f; --good-soft: #15301f;
+    --info: #86b6ea; --info-soft: #172739; --code-bg: #1f2925; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111715; --surface: #18201d; --ink: #e5ebe8; --muted: #9aa8a3; --line: #2a3531;
+  --accent: #5cc4a9; --accent-soft: #173029; --warn: #e3a64a; --warn-soft: #33270f;
+  --bad: #f07a80; --bad-soft: #3a1a1d; --good: #6fcf8f; --good-soft: #15301f;
+  --info: #86b6ea; --info-soft: #172739; --code-bg: #1f2925; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.65; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 32px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 48px; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; font-size: 14px; }
+nav.toc .brand { font-family: var(--f-display); font-weight: 800; font-size: 18px; letter-spacing: -0.01em; margin-bottom: 4px; }
+nav.toc .sub { color: var(--muted); font-size: 12px; margin-bottom: 20px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: s; }
+nav.toc li a { display: grid; grid-template-columns: 28px 1fr; padding: 5px 8px; border-radius: 6px; color: var(--muted); text-decoration: none; }
+nav.toc li a::before { counter-increment: s; content: counter(s, decimal-leading-zero); font-family: var(--f-mono); font-size: 11px; padding-top: 3px; }
+nav.toc li a:hover, nav.toc li a:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+main { min-width: 0; }
+header.cover { border-bottom: 1px solid var(--line); padding-bottom: 28px; margin-bottom: 8px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.12; letter-spacing: -0.02em; margin: 8px 0 14px; text-wrap: balance; }
+.lede { font-size: 18px; color: var(--muted); max-width: 68ch; margin: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; font-size: 13px; color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 600; }
+section { padding-top: 44px; scroll-margin-top: 16px; }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 27px; letter-spacing: -0.01em; line-height: 1.25; margin: 0 0 14px; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+h2 .n { font-family: var(--f-mono); font-size: 14px; color: var(--accent); font-weight: 600; }
+h3 { font-size: 18.5px; font-weight: 700; margin: 28px 0 8px; text-wrap: balance; }
+h4 { font-size: 15px; font-weight: 700; margin: 18px 0 6px; }
+p, ul, ol { max-width: 76ch; }
+p { margin: 0 0 12px; }
+ul, ol { padding-left: 22px; margin: 0 0 14px; }
+li { margin-bottom: 5px; }
+a { color: var(--accent); }
+code { font-family: var(--f-mono); font-size: 0.86em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre.code { font-family: var(--f-mono); font-size: 13px; line-height: 1.55; background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; margin: 0 0 16px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 22px 0 6px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.stat .v { font-family: var(--f-display); font-weight: 800; font-size: 26px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.table-wrap { overflow-x: auto; margin: 10px 0 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; background: var(--bg); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-family: var(--f-mono); font-size: 13px; }
+td code { white-space: nowrap; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 9px; border-radius: 999px; white-space: nowrap; }
+.p-good { background: var(--good-soft); color: var(--good); }
+.p-bad { background: var(--bad-soft); color: var(--bad); }
+.p-warn { background: var(--warn-soft); color: var(--warn); }
+.p-info { background: var(--info-soft); color: var(--info); }
+.note { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 14px 18px; margin: 14px 0 18px; max-width: 80ch; }
+.note.warn { border-color: var(--warn); background: var(--warn-soft); }
+.note.key { border-color: var(--accent); background: var(--accent-soft); }
+.note p:last-child, .note ul:last-child { margin-bottom: 0; }
+.note .t { font-weight: 700; margin-bottom: 4px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 12px 0 18px; }
+.col { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.col h4 { margin-top: 0; }
+.col ul { margin-bottom: 0; }
+.col.pro h4 { color: var(--good); }
+.col.con h4 { color: var(--bad); }
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; margin: 12px 0 20px; }
+pre.mermaid { margin: 0; background: transparent; font-family: var(--f-body); }
+.formula { font-family: var(--f-mono); font-size: 14px; background: var(--surface); border: 1px solid var(--accent); border-radius: 10px; padding: 16px 18px; overflow-x: auto; margin: 10px 0 18px; line-height: 1.8; }
+footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  nav.toc { position: static; max-height: none; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+  nav.toc ol { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Mục lục">
+  <div class="brand">Move2Earn</div>
+  <div class="sub">Tài liệu kỹ thuật &amp; giải pháp · v1.0</div>
+  <ol>
+    <li><a href="#tomtat">Tóm tắt</a></li>
+    <li><a href="#nguyentac">Bài toán &amp; nguyên tắc</a></li>
+    <li><a href="#kientruc">Kiến trúc tổng thể</a></li>
+    <li><a href="#cambien">Nguồn dữ liệu cảm biến</a></li>
+    <li><a href="#epoch">Mô hình Epoch</a></li>
+    <li><a href="#vongdoi">Vòng đời phiên &amp; trạng thái app</a></li>
+    <li><a href="#luutru">Lưu trữ, checkpoint &amp; log</a></li>
+    <li><a href="#gianlan">Chống gian lận</a></li>
+    <li><a href="#dongho">Đồng hồ &amp; thời gian</a></li>
+    <li><a href="#baomat">Bảo mật dữ liệu</a></li>
+    <li><a href="#server">Xử lý phía server</a></li>
+    <li><a href="#coin">Công thức tính coin</a></li>
+    <li><a href="#config">Cấu hình</a></li>
+    <li><a href="#kiemthu">Kiểm thử &amp; kết quả</a></li>
+    <li><a href="#danhgia">Ưu, nhược &amp; so sánh</a></li>
+    <li><a href="#toiuu">Tối ưu &amp; khuyến nghị</a></li>
+    <li><a href="#hanche">Hạn chế &amp; lộ trình</a></li>
+    <li><a href="#phuluc">Phụ lục</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="cover">
+  <div class="eyebrow">Ứng dụng iOS · Move to Earn</div>
+  <h1>Move2Earn: theo dõi, xác minh và quy đổi vận động thành coin</h1>
+  <p class="lede">Tài liệu này mô tả toàn bộ logic của ứng dụng: dữ liệu được thu thập thế nào, được xác minh ra sao, vì sao chọn từng kỹ thuật, ưu nhược điểm của chúng, và kết quả kiểm thử thực tế. Dùng để hiểu hệ thống, trao đổi với đội ngũ và trình bày với khách hàng.</p>
+  <div class="meta">
+    <span><b>Phiên bản:</b> 1.0 (bản đầu, chưa có server thật)</span>
+    <span><b>Ngày:</b> 17/10/2026</span>
+    <span><b>Nền tảng:</b> iOS, Swift / SwiftUI</span>
+    <span><b>Quy mô:</b> ~4.800 dòng Swift, 32 test tự động</span>
+  </div>
+</header>
+
+<!-- 1 -->
+<section id="tomtat">
+  <h2><span class="n">01</span>Tóm tắt</h2>
+  <p>Người dùng bắt đầu một <b>phiên di chuyển</b>. Điện thoại ghi lại bước chân, GPS, loại hoạt động (đi bộ, chạy, đi xe…) và nhịp rung của máy. Dữ liệu được chia thành các <b>epoch 60 giây</b>; mỗi epoch được kiểm tra riêng bằng hơn 20 quy tắc chống gian lận. Khi kết thúc, toàn bộ phiên được đóng gói thành một báo cáo có chữ ký số, kèm nhật ký sự kiện không thể sửa, rồi gửi lên server. <b>Server tự xác minh lại từ dữ liệu gốc</b> và là bên duy nhất quyết định số coin.</p>
+  <p>Phiên bản hiện tại chưa có server thật, nên một <b>mock server</b> chạy ngay trong app đóng vai trò đó: nó chỉ nhận dữ liệu đã ký, có kho dữ liệu riêng, đồng hồ riêng, sổ cái coin riêng. Khi có backend thật, chỉ cần thay lớp này; phần tracking và giao diện giữ nguyên.</p>
+  <div class="stats">
+    <div class="stat"><div class="v">60 s</div><div class="l">Độ dài một epoch, đơn vị xác minh và tính thưởng</div></div>
+    <div class="stat"><div class="v">20/20</div><div class="l">Kịch bản trung thực và gian lận cho kết quả đúng kỳ vọng</div></div>
+    <div class="stat"><div class="v">32</div><div class="l">Test tự động, tất cả đều đạt</div></div>
+    <div class="stat"><div class="v">1213/1213</div><div class="l">Bước khớp tuyệt đối qua foreground, background, kill và mở lại</div></div>
+    <div class="stat"><div class="v">≤ 10 s</div><div class="l">Dữ liệu GPS tối đa có thể mất khi app bị tắt đột ngột</div></div>
+  </div>
+  <div class="note key">
+    <div class="t">Thông điệp chính cho khách hàng</div>
+    <ul>
+      <li><b>Không mất dữ liệu</b> khi app chạy nền, bị hệ điều hành tạm dừng, bị người dùng vuốt tắt hay máy khởi động lại. Bước chân được khôi phục từ bộ nhớ chuyển động của chính iPhone.</li>
+      <li><b>Không tin client.</b> Điện thoại chỉ thu thập và ký dữ liệu; mọi quyết định thưởng nằm ở server, nên sửa app cũng không tự cộng được coin.</li>
+      <li><b>Mọi quyết định đều giải thích được.</b> Mỗi epoch có cờ, mức độ tin cậy và số coin riêng, người dùng và đội hỗ trợ đều xem được lý do.</li>
+      <li><b>Mọi con số đều điều chỉnh được</b> qua cấu hình, không cần phát hành lại app.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="nguyentac">
+  <h2><span class="n">02</span>Bài toán &amp; nguyên tắc thiết kế</h2>
+  <p>Ứng dụng Move to Earn trả giá trị thật cho dữ liệu do thiết bị của người dùng tạo ra. Vì vậy nó luôn bị tấn công: người dùng có động lực tài chính để làm giả bước chân, quãng đường hoặc thời gian. Đồng thời, người dùng trung thực sẽ bỏ app nếu bị mất bước hoặc bị phạt oan. Hệ thống phải cân bằng hai yêu cầu này.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Nguyên tắc</th><th>Ý nghĩa</th><th>Áp dụng trong app</th></tr></thead>
+    <tbody>
+      <tr><td><b>Server là trọng tài</b></td><td>Client có thể bị sửa, nên không được quyết định số coin.</td><td>Client chỉ tính <i>ước tính</i> để hiển thị; server chạy lại toàn bộ xác minh từ epoch gốc.</td></tr>
+      <tr><td><b>Dữ liệu không được mất</b></td><td>Người dùng trung thực không bị thiệt khi app bị tắt.</td><td>Checkpoint 10 giây, khôi phục từ lịch sử CoreMotion, outbox lưu báo cáo trước khi gửi.</td></tr>
+      <tr><td><b>Nguồn khó giả nhất làm chuẩn</b></td><td>Chọn nguồn dữ liệu mà app khác không ghi vào được.</td><td>Bước chân lấy từ CMPedometer (chip chuyển động), không lấy từ HealthKit.</td></tr>
+      <tr><td><b>Nhiều tín hiệu độc lập</b></td><td>Một tín hiệu có thể sai; nhiều tín hiệu cùng sai thì khó.</td><td>Đối chiếu bước chân, GPS, bộ phân loại hoạt động, gia tốc kế, đồng hồ.</td></tr>
+      <tr><td><b>Phạt theo mức độ</b></td><td>Tránh phạt oan người thật.</td><td>Ba mức: thông tin, cảnh báo (giảm độ tin cậy), từ chối.</td></tr>
+      <tr><td><b>Có bằng chứng, giải thích được</b></td><td>Xử lý khiếu nại và kiểm toán.</td><td>Nhật ký nối chuỗi hash, cờ chi tiết theo từng epoch.</td></tr>
+      <tr><td><b>Cấu hình hoá</b></td><td>Điều chỉnh kinh tế và ngưỡng mà không cần cập nhật app.</td><td>Hơn 50 tham số trong <code>RewardConfig</code>.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 3 -->
+<section id="kientruc">
+  <h2><span class="n">03</span>Kiến trúc tổng thể</h2>
+  <p>Luồng dữ liệu đi một chiều từ cảm biến tới sổ cái. Mỗi khối có một trách nhiệm rõ ràng và giao tiếp qua kiểu dữ liệu thuần, nên có thể kiểm thử từng khối riêng.</p>
+  <div class="diagram"><pre class="mermaid">
+flowchart LR
+  subgraph Device["iPhone"]
+    P["CMPedometer&lt;br/&gt;bước chân"] --> SM
+    A["CMMotionActivity&lt;br/&gt;loại hoạt động"] --> SM
+    G["CoreLocation&lt;br/&gt;GPS 1 Hz"] --> SM
+    X["Gia tốc kế&lt;br/&gt;nhịp bước"] --> SM
+    SM["SessionManager&lt;br/&gt;heartbeat 5s, checkpoint 10s"] --> EB["EpochBuilder&lt;br/&gt;cửa sổ 60s"]
+    EB --> EST["Ước tính live&lt;br/&gt;(Verifier + Calculator)"]
+    EB --> RP["SessionReport&lt;br/&gt;+ nhật ký hash chain"]
+    RP --> SG["Ký HMAC&lt;br/&gt;Keychain"]
+    SG --> OB["Outbox&lt;br/&gt;(lưu đĩa)"]
+    HK["HealthKit&lt;br/&gt;đối chiếu + đánh thức"] -.-> RP
+  end
+  OB -->|"Submission&lt;br/&gt;(kèm anchor đồng hồ)"| SV
+  subgraph Server["Server (hiện là mock)"]
+    SV["Kiểm chữ ký, replay,&lt;br/&gt;chuỗi log, đồng hồ"] --> VR["ActivityVerifier&lt;br/&gt;chạy lại từ dữ liệu gốc"]
+    VR --> RC["RewardCalculator&lt;br/&gt;+ giới hạn ngày"]
+    RC --> LG["Sổ cái coin"]
+  end
+  LG -->|"Receipt"| UI["Ví + Lịch sử"]
+  </pre></div>
+  <h3>Các module chính</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Module</th><th>File</th><th>Trách nhiệm</th></tr></thead>
+    <tbody>
+      <tr><td>Mô hình dữ liệu</td><td><code>Core/Models.swift</code></td><td>Điểm GPS, hoạt động, epoch, cờ, báo cáo phiên; đều là kiểu thuần, mã hoá JSON được.</td></tr>
+      <tr><td>Cấu hình</td><td><code>Core/RewardConfig.swift</code></td><td>Toàn bộ tham số; lưu cục bộ, sửa được trong app (thay cho remote config).</td></tr>
+      <tr><td>Lưu trữ</td><td><code>Core/FileStore.swift</code></td><td>Ghi JSON nguyên tử, bảo vệ file ở mức "sau lần mở khoá đầu tiên" để ghi được khi máy khoá.</td></tr>
+      <tr><td>Nhật ký</td><td><code>Core/EventLogger.swift</code></td><td>Log sự kiện dạng JSONL, mỗi dòng chứa hash của dòng trước.</td></tr>
+      <tr><td>Đồng hồ</td><td><code>Core/ClockGuard.swift</code></td><td>Đồng hồ đơn điệu, mã phiên khởi động; phát hiện chỉnh giờ và khởi động lại.</td></tr>
+      <tr><td>Bảo mật</td><td><code>Core/Security.swift</code></td><td>Keychain, ID cài đặt, ký HMAC, kiểm tra jailbreak, debugger, thư viện hook.</td></tr>
+      <tr><td>Cảm biến</td><td><code>Tracking/*.swift</code></td><td>Pedometer, hoạt động, gia tốc kế, GPS, HealthKit; đều qua protocol để thay bằng dữ liệu giả khi test.</td></tr>
+      <tr><td>Điều phối phiên</td><td><code>Tracking/SessionManager.swift</code></td><td>Bắt đầu, heartbeat, đóng epoch, checkpoint, khôi phục sau kill, kết thúc.</td></tr>
+      <tr><td>Xác minh</td><td><code>Verification/ActivityVerifier.swift</code></td><td>Toàn bộ quy tắc chống gian lận, theo epoch và theo phiên.</td></tr>
+      <tr><td>Tính thưởng</td><td><code>Verification/RewardCalculator.swift</code></td><td>Công thức coin và giới hạn ngày.</td></tr>
+      <tr><td>Server tạm</td><td><code>Server/MockRewardServer.swift</code></td><td>Kiểm chữ ký, chống replay, chống trùng thời gian, xác minh lại, ghi sổ cái.</td></tr>
+      <tr><td>Đồng bộ</td><td><code>Server/SyncService.swift</code></td><td>Outbox, gửi lại khi lỗi mạng, lịch sử phiên, ví.</td></tr>
+      <tr><td>Kiểm thử gian lận</td><td><code>Debug/SyntheticScenarios.swift</code></td><td>20 kịch bản tổng hợp chạy qua pipeline thật (Scenario Lab).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 4 -->
+<section id="cambien">
+  <h2><span class="n">04</span>Nguồn dữ liệu cảm biến</h2>
+  <p>Không có cảm biến nào đủ tin cậy một mình. App kết hợp năm nguồn; mỗi nguồn trả lời một câu hỏi khác nhau, và gian lận phải qua mặt được tất cả cùng lúc.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Nguồn</th><th>Trả lời câu hỏi</th><th>Vì sao chọn</th><th>Hạn chế</th></tr></thead>
+    <tbody>
+      <tr><td><b>CMPedometer</b><br><span class="pill p-good">nguồn chính</span></td><td>Bao nhiêu bước, quãng đường ước tính, số tầng.</td><td>Do chip chuyển động của Apple ghi liên tục, kể cả khi app bị tắt; lưu khoảng 7 ngày lịch sử; <b>app khác không ghi vào được</b>.</td><td>Vẫn đếm khi điện thoại bị lắc. Không có trên Simulator.</td></tr>
+      <tr><td><b>CMMotionActivity</b></td><td>Đang đi bộ, chạy, đạp xe, đi ô tô hay đứng yên?</td><td>Bộ phân loại của Apple, có độ tin cậy; truy vấn được lịch sử như pedometer.</td><td>Có độ trễ, có lúc nhầm (ví dụ "ô tô" khi đứng đèn đỏ). Chỉ dùng mức tin cậy trung bình trở lên.</td></tr>
+      <tr><td><b>CoreLocation (GPS 1 Hz)</b></td><td>Có thực sự di chuyển không, nhanh cỡ nào, vị trí có bị giả không?</td><td>Đo được tốc độ và quãng đường độc lập với bước chân; iOS báo vị trí giả lập (<code>isSimulatedBySoftware</code>); giữ app chạy nền.</td><td>Tốn pin; yếu trong nhà; nhiễu khi đứng yên (đã có thuật toán lọc).</td></tr>
+      <tr><td><b>Gia tốc kế (25 Hz)</b></td><td>Nhịp bước có giống người thật không?</td><td>Máy lắc có nhịp đều gần như tuyệt đối; người thật luôn dao động nhẹ.</td><td>Chỉ chạy khi app đang sống. Là tín hiệu phụ, không dùng một mình.</td></tr>
+      <tr><td><b>HealthKit</b><br><span class="pill p-info">phụ trợ</span></td><td>Có bước nhập tay hoặc từ app khác không? Đánh thức app khi có dữ liệu mới.</td><td>Phát hiện dữ liệu nhập tay; observer query đánh thức app cả khi đã bị tắt.</td><td><b>Không dùng làm nguồn thưởng</b> vì ai cũng ghi vào được. Dữ liệu iPhone ghi vào HealthKit có độ trễ.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <div class="t">Vì sao không dùng HealthKit làm nguồn bước chân?</div>
+    <p>Đây là câu hỏi khách hàng hay đặt ra. Bất kỳ app nào được cấp quyền, kể cả app "tăng bước" trên mạng, đều có thể ghi số bước tuỳ ý vào HealthKit; người dùng cũng nhập tay được. Ngược lại, CMPedometer đọc thẳng từ chip chuyển động và app bên thứ ba không thể ghi vào. HealthKit chỉ được dùng để <i>đối chiếu</i> và để <i>đánh thức</i> app.</p>
+  </div>
+  <h3>Lọc nhiễu GPS khi đứng yên</h3>
+  <p>Khi điện thoại nằm yên, GPS vẫn dao động vài mét mỗi giây; cộng dồn các bước nhảy đó sẽ tạo ra quãng đường ảo. App dùng thuật toán <b>neo (anchor)</b>: chỉ cộng quãng đường khi vị trí mới cách điểm neo cuối một khoảng lớn hơn sai số GPS (tối thiểu 5 m, tối đa 20 m), rồi dời điểm neo. Kiểm thử cho thấy 60 điểm nhiễu khi đứng yên tạo ra dưới 10 m, trong khi đi bộ thật vẫn được đo gần đúng.</p>
+  <h3>Phân tích nhịp bước từ gia tốc kế</h3>
+  <p>App tìm các đỉnh của độ lớn gia tốc (cách nhau tối thiểu 0,25 s), rồi tính <b>hệ số biến thiên (CV)</b> của khoảng cách giữa các đỉnh. Ở 25 Hz, sai số lấy mẫu khoảng 40 ms đủ che mất nhịp đều của máy lắc, nên app <b>nội suy parabol</b> vị trí đỉnh và dùng dấu thời gian của chính cảm biến. Kết quả kiểm thử: tín hiệu máy có CV dưới ngưỡng 0,012; tín hiệu người dao động 8% có CV cao hơn rõ rệt.</p>
+</section>
+
+<!-- 5 -->
+<section id="epoch">
+  <h2><span class="n">05</span>Mô hình Epoch</h2>
+  <p>Một phiên được chia thành các cửa sổ cố định 60 giây (cấu hình được). Mỗi epoch là một bản tóm tắt độc lập: được xác minh riêng, có độ tin cậy riêng, được thưởng riêng.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Trường</th><th>Ý nghĩa</th></tr></thead>
+    <tbody>
+      <tr><td><code>start</code>, <code>end</code>, <code>index</code></td><td>Khung thời gian; các epoch liền nhau, không chồng lấn.</td></tr>
+      <tr><td><code>source</code></td><td><span class="pill p-good">live</span> app đang sống và quan sát trực tiếp, hoặc <span class="pill p-warn">recovered</span> dựng lại từ lịch sử CoreMotion.</td></tr>
+      <tr><td><code>phase</code>, <code>aliveFraction</code></td><td>Foreground, background hay không chạy; tỷ lệ thời gian app còn sống trong cửa sổ.</td></tr>
+      <tr><td><code>steps</code>, <code>pedometerDistance</code>, <code>floorsAscended</code></td><td>Số liệu từ CMPedometer cho đúng cửa sổ đó.</td></tr>
+      <tr><td><code>gpsPoints</code>, <code>gpsDistance</code>, <code>gpsDisplacement</code></td><td>Số điểm GPS hợp lệ, quãng đường đã lọc nhiễu, khoảng cách thẳng từ đầu đến cuối.</td></tr>
+      <tr><td><code>gpsAvgSpeed</code>, <code>gpsMaxSpeed</code>, <code>gpsAvgAccuracy</code></td><td>Tốc độ trung bình, tốc độ tức thời lớn nhất, sai số trung bình.</td></tr>
+      <tr><td><code>simulatedPoints</code>, <code>teleports</code></td><td>Số điểm GPS bị iOS đánh dấu là giả; số lần vị trí nhảy xa bất khả thi.</td></tr>
+      <tr><td><code>activity</code>, <code>dominantActivity</code></td><td>Tỷ lệ thời gian theo từng loại hoạt động; loại chiếm ưu thế.</td></tr>
+      <tr><td><code>motion</code></td><td>Số mẫu, số đỉnh, độ lệch chuẩn và CV nhịp bước từ gia tốc kế.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols">
+    <div class="col pro"><h4>Lợi ích</h4><ul>
+      <li>Thưởng một phần: chỉ loại phút gian lận, giữ phút hợp lệ.</li>
+      <li>Thống nhất giữa sống và chết: cùng một thuật toán cho dữ liệu live và dữ liệu khôi phục.</li>
+      <li>Dung lượng nhỏ: khoảng 240 epoch cho phiên 4 giờ thay vì hàng chục nghìn điểm thô.</li>
+      <li>Server tính lại được, kết quả giống hệt client.</li>
+    </ul></div>
+    <div class="col con"><h4>Đánh đổi</h4><ul>
+      <li>Gian lận ngắn hơn 60 giây có thể bị pha loãng (giảm bằng các quy tắc theo phiên).</li>
+      <li>Epoch cuối thường ngắn hơn (chỉ được tạo nếu dài từ 5 giây).</li>
+      <li>Điểm GPS nằm ở ranh giới hai epoch được nối bằng "điểm trước đó" để không bỏ sót teleport.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section id="vongdoi">
+  <h2><span class="n">06</span>Vòng đời phiên &amp; trạng thái app</h2>
+  <p>Đây là phần khách hàng quan tâm nhất: điều gì xảy ra khi người dùng tắt màn hình, chuyển app, vuốt tắt app hay điện thoại hết pin.</p>
+  <div class="diagram"><pre class="mermaid">
+stateDiagram-v2
+  [*] --> Foreground: Bắt đầu phiên
+  Foreground --> Background: Về màn hình chính / khoá máy
+  Background --> Foreground: Mở lại app
+  Background --> Suspended: iOS tạm dừng (không có quyền vị trí nền)
+  Suspended --> Foreground: Mở lại, bù epoch bị lỡ
+  Foreground --> Killed: Vuốt tắt / crash / hết RAM
+  Background --> Killed
+  Killed --> Restored: Mở app / iOS đánh thức (vị trí, HealthKit, BGTask)
+  Restored --> Foreground: Bù khoảng trống từ CoreMotion
+  Restored --> Ended: Khoảng trống quá 6 giờ
+  Foreground --> Ended: Người dùng kết thúc / đứng yên 30 phút / quá 4 giờ
+  Ended --> [*]
+  </pre></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tình huống</th><th>Điều app làm</th><th>Dữ liệu</th><th>Ảnh hưởng thưởng</th></tr></thead>
+    <tbody>
+      <tr><td><b>Foreground</b></td><td>Heartbeat mỗi 5 giây đóng các epoch đủ 60 giây; checkpoint mỗi 10 giây; cập nhật ước tính live.</td><td>Đầy đủ: bước, GPS, hoạt động, gia tốc kế.</td><td>×1.0</td></tr>
+      <tr><td><b>Background</b> (có quyền vị trí)</td><td>Chế độ nền vị trí + <code>CLBackgroundActivitySession</code> giữ app chạy; mọi thứ như foreground. Lưu ngay khi chuyển xuống nền.</td><td>Đầy đủ, epoch ghi <code>phase = background</code>.</td><td>×1.0</td></tr>
+      <tr><td><b>Bị tạm dừng</b></td><td>Không chạy gì. Khi quay lại, heartbeat đóng toàn bộ epoch bị lỡ bằng truy vấn lịch sử pedometer và hoạt động.</td><td>Bước + hoạt động; không có GPS.</td><td>×0.7 (recovered)</td></tr>
+      <tr><td><b>Bị kill</b> (vuốt tắt, crash, hết RAM)</td><td><code>active.json</code> vẫn còn. Lần chạy tiếp theo, app tải lại phiên, ghi cờ <code>appRelaunched</code> kèm độ dài khoảng trống, rồi bù dữ liệu.</td><td>Như trên; GPS đã checkpoint vẫn được giữ.</td><td>×0.7 cho phần bị bù</td></tr>
+      <tr><td><b>App được mở lại tự động</b></td><td>Bốn đường: người dùng mở; iOS mở lại khi vị trí thay đổi đáng kể (cần quyền "Luôn luôn"); HealthKit báo có bước mới; tác vụ làm mới nền.</td><td>—</td><td>—</td></tr>
+      <tr><td><b>Khởi động lại máy</b></td><td>Phát hiện qua mã phiên khởi động; ghi cờ <code>deviceRebooted</code>; vẫn khôi phục được vì lịch sử pedometer còn.</td><td>Như kill.</td><td>×0.7</td></tr>
+      <tr><td><b>Khoảng trống quá dài</b></td><td>Nếu lâu hơn 6 giờ, chỉ bù tối đa 6 giờ rồi đóng phiên (<code>gapExceeded</code>).</td><td>Giới hạn.</td><td>—</td></tr>
+      <tr><td><b>Đứng yên lâu</b></td><td>30 phút liên tiếp dưới 10 bước/phút thì tự kết thúc phiên (<code>idle</code>).</td><td>—</td><td>—</td></tr>
+      <tr><td><b>Quá thời lượng</b></td><td>Đủ 4 giờ thì tự kết thúc (<code>maxDuration</code>).</td><td>—</td><td>Epoch sau mốc bị loại</td></tr>
+      <tr><td><b>Thu hồi quyền vị trí</b></td><td>Ghi cờ <code>permissionRevoked</code>, tiếp tục với pedometer.</td><td>Mất GPS.</td><td>×0.85 (không GPS)</td></tr>
+      <tr><td><b>Mất mạng khi kết thúc</b></td><td>Báo cáo đã ký nằm trong outbox; tự gửi lại khi mở app, khi vào foreground, khi chạy tác vụ nền, khi HealthKit đánh thức.</td><td>Không mất.</td><td>Server xử lý idempotent</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <div class="t">Cách app biết epoch nào là "live", epoch nào là "recovered"</div>
+    <p>Mỗi heartbeat nối dài một <i>khoảng sống</i>. Khi đóng một epoch, app tính tỷ lệ thời gian của cửa sổ nằm trong các khoảng sống: từ 50% trở lên là <span class="pill p-good">live</span>, còn lại là <span class="pill p-warn">recovered</span>. Trạng thái foreground hay background được lấy từ lịch sử chuyển trạng thái tại <i>giữa</i> cửa sổ, nên một epoch quan sát lúc chạy nền vẫn ghi là background dù được đóng sau khi app mở lại.</p>
+  </div>
+</section>
+
+<!-- 7 -->
+<section id="luutru">
+  <h2><span class="n">07</span>Lưu trữ, checkpoint &amp; nhật ký</h2>
+  <h3>Những gì được lưu và khi nào</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Dữ liệu</th><th>File</th><th>Thời điểm ghi</th></tr></thead>
+    <tbody>
+      <tr><td>Phiên đang chạy (epoch, điểm GPS chưa xử lý, cờ, khoảng sống, lịch sử trạng thái)</td><td><code>session/active.json</code></td><td>Mỗi 10 giây, khi xuống nền, khi cảnh báo bộ nhớ, trước khi app bị tắt (nếu iOS cho phép).</td></tr>
+      <tr><td>Toàn bộ tuyến đường</td><td><code>session/route-&lt;id&gt;.jsonl</code></td><td>Ghi nối thêm theo lô mỗi lần checkpoint; hash file được đưa vào báo cáo.</td></tr>
+      <tr><td>Nhật ký sự kiện</td><td><code>logs/events-YYYY-MM-DD.jsonl</code></td><td>Ngay khi có sự kiện.</td></tr>
+      <tr><td>Báo cáo đã ký chờ gửi</td><td><code>outbox/&lt;id&gt;.json</code></td><td>Khi phiên kết thúc, <b>trước</b> khi gọi mạng.</td></tr>
+      <tr><td>Lịch sử phiên và biên nhận</td><td><code>history/</code></td><td>Khi kết thúc phiên và khi có phản hồi từ server.</td></tr>
+      <tr><td>Khoá ký và ID cài đặt</td><td>Keychain</td><td>Lần chạy đầu; còn nguyên sau khi gỡ và cài lại app.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Mọi file được ghi nguyên tử (ghi file tạm rồi đổi tên) với mức bảo vệ <code>completeUntilFirstUserAuthentication</code>: dữ liệu được mã hoá, nhưng app vẫn ghi được khi chạy nền lúc máy đang khoá.</p>
+  <h3>Nhật ký nối chuỗi hash</h3>
+  <p>Mỗi dòng log chứa số thứ tự, thời gian, đồng hồ đơn điệu, loại sự kiện, dữ liệu, hash của dòng trước và hash của chính nó (SHA-256). Sửa, xoá hay đảo thứ tự bất kỳ dòng nào đều làm đứt chuỗi. Khi kết thúc phiên, đoạn log từ <code>sessionStarted</code> đến <code>sessionEnded</code> được đưa vào báo cáo, và server kiểm tra lại toàn bộ chuỗi.</p>
+  <pre class="code">hash = SHA256( seq | t | monoNanos | type | level | sessionId | data đã sắp xếp | prevHash )</pre>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Sự kiện</th><th>Ghi khi</th></tr></thead>
+    <tbody>
+      <tr><td><code>appLaunched</code></td><td>Mỗi lần app khởi chạy, kèm lý do (người dùng, vị trí, nền).</td></tr>
+      <tr><td><code>sessionStarted</code>, <code>sessionEnded</code>, <code>sessionDiscarded</code></td><td>Bắt đầu, kết thúc (kèm lý do), huỷ phiên.</td></tr>
+      <tr><td><code>sessionRestored</code></td><td>Khôi phục sau kill, kèm độ dài khoảng trống và số lần mở lại.</td></tr>
+      <tr><td><code>epochClosed</code></td><td>Mỗi epoch: số bước, nguồn, số điểm GPS, hoạt động, tỷ lệ sống.</td></tr>
+      <tr><td><code>appPhase</code>, <code>appWillTerminate</code>, <code>memoryWarning</code></td><td>Chuyển foreground hoặc background, sắp bị tắt, thiếu bộ nhớ.</td></tr>
+      <tr><td><code>clockTampered</code>, <code>systemClockChanged</code>, <code>timezoneChanged</code>, <code>deviceRebooted</code></td><td>Phát hiện bất thường về thời gian.</td></tr>
+      <tr><td><code>locationAuthorization</code>, <code>locationError</code>, <code>pedometerError</code></td><td>Thay đổi quyền, lỗi cảm biến.</td></tr>
+      <tr><td><code>reportQueued</code>, <code>reportSubmitted</code>, <code>reportSubmitFailed</code></td><td>Vòng đời upload.</td></tr>
+      <tr><td><code>healthKitWake</code>, <code>backgroundRefresh</code>, <code>lowPowerMode</code></td><td>App được đánh thức; thay đổi chế độ nguồn.</td></tr>
+      <tr><td><code>logIntegrityBroken</code></td><td>Khi mở app mà phát hiện file log bị cắt hoặc sửa.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Log cũng được ghi song song vào hệ thống log của Apple (xem bằng Console.app khi debug), và xuất được thành file từ tab Logs.</p>
+</section>
+
+<!-- 8 -->
+<section id="gianlan">
+  <h2><span class="n">08</span>Chống gian lận</h2>
+  <h3>Ba mức xử lý</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Mức</th><th>Ý nghĩa</th><th>Tác động</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill p-info">info</span></td><td>Ghi nhận, không phải lỗi (dữ liệu khôi phục, không có GPS, chạy trên Simulator…).</td><td>Không phạt; có thể kèm hệ số thưởng thấp hơn.</td></tr>
+      <tr><td><span class="pill p-warn">warning</span></td><td>Đáng ngờ nhưng có thể do người thật (máy chạy bộ, GPS kém…).</td><td>Mỗi cảnh báo trừ 0,15 điểm tin cậy (trust). Trust dưới 0,4 thì epoch không được thưởng.</td></tr>
+      <tr><td><span class="pill p-bad">reject</span></td><td>Gần như chắc chắn gian lận hoặc dữ liệu bất khả.</td><td>Loại epoch; ở cấp phiên thì loại cả phiên.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <div class="t">Kết hợp tín hiệu để giảm phạt oan</div>
+    <ul>
+      <li>Một dấu hiệu "máy móc" riêng lẻ (nhịp quá đều, có bước mà không di chuyển, có bước khi đang "đứng yên") chỉ là cảnh báo. <b>Từ hai dấu hiệu độc lập trở lên</b> thì mới bị coi là máy lắc và bị loại.</li>
+      <li>Ngược lại, <b>giả mạo vị trí ở bất kỳ epoch nào</b> (GPS giả lập hoặc teleport) cho thấy ý định gian lận, nên <b>cả phiên bị huỷ</b>.</li>
+    </ul>
+  </div>
+  <h3>Bảng các kiểu gian lận</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Kiểu gian lận</th><th>Tín hiệu phát hiện</th><th>Mức</th><th>Tham số chính</th></tr></thead>
+    <tbody>
+      <tr><td>Đi ô tô, xe buýt, xe máy</td><td>Tốc độ GPS trung bình; CoreMotion báo automotive; quãng đường GPS chia số bước quá lớn.</td><td><span class="pill p-bad">reject</span></td><td><code>vehicleSpeedMps</code> 7,5 · <code>automotiveFractionReject</code> 25%</td></tr>
+      <tr><td>Lắc điện thoại khi ngồi trên xe</td><td>Như trên, cộng lệch giữa quãng đường pedometer và GPS.</td><td><span class="pill p-bad">reject</span></td><td>như trên · <code>gpsPedometerMismatchRatio</code> 2,5</td></tr>
+      <tr><td>Đạp xe</td><td>CoreMotion báo cycling; sải chân theo GPS vượt quá 2 lần mức tối đa.</td><td><span class="pill p-bad">reject</span></td><td><code>cyclingFractionReject</code> 50% · <code>strideMax</code> 2,5 m</td></tr>
+      <tr><td>Máy lắc, con lắc, quạt</td><td>CV nhịp bước rất thấp; cadence gần như không đổi qua 8 epoch; có bước mà vị trí không đổi.</td><td><span class="pill p-warn">warning</span> → <span class="pill p-bad">reject</span> khi ≥ 2 dấu hiệu</td><td><code>roboticRhythmCV</code> 0,012 · <code>roboticSessionCadenceCV</code> 0,006</td></tr>
+      <tr><td>Lắc tay tại chỗ</td><td>Có bước nhưng không di chuyển; có bước khi CoreMotion báo đứng yên.</td><td><span class="pill p-warn">warning</span></td><td><code>stepsWithoutMovementMaxDisplacement</code> 12 m</td></tr>
+      <tr><td>Fake GPS, app joystick</td><td>iOS đánh dấu <code>isSimulatedBySoftware</code>.</td><td><span class="pill p-bad">reject</span> cả phiên</td><td><code>rejectSimulatedLocation</code>, <code>rejectSessionOnSpoofing</code></td></tr>
+      <tr><td>Vị trí nhảy (teleport)</td><td>Hai điểm liên tiếp cách nhau trên 100 m với tốc độ trên 60 m/s.</td><td><span class="pill p-bad">reject</span> cả phiên</td><td><code>teleportSpeedMps</code> 60 · <code>teleportMinDistance</code> 100</td></tr>
+      <tr><td>Số bước bất khả thi</td><td>Cadence trên 240 bước/phút.</td><td><span class="pill p-bad">reject</span></td><td><code>cadenceMax</code> 240</td></tr>
+      <tr><td>Sải chân bất thường</td><td>Quãng đường chia số bước ngoài khoảng 0,25–2,5 m.</td><td><span class="pill p-warn">warning</span></td><td><code>strideMin</code>, <code>strideMax</code></td></tr>
+      <tr><td>Bước giả trong HealthKit</td><td>Không dùng HealthKit làm nguồn; mẫu nhập tay và từ app khác được ghi nhận.</td><td><span class="pill p-info">info</span></td><td>—</td></tr>
+      <tr><td>Chỉnh giờ trong phiên</td><td>Đồng hồ thường lệch so với đồng hồ đơn điệu; thông báo đổi giờ của hệ thống.</td><td><span class="pill p-bad">reject</span></td><td><code>clockToleranceSeconds</code> 30</td></tr>
+      <tr><td>Chỉnh giờ trước khi chạy</td><td>Server tính giờ kết thúc thật từ đồng hồ đơn điệu lúc upload.</td><td><span class="pill p-bad">reject</span></td><td>như trên</td></tr>
+      <tr><td>Lùi giờ để đếm lại một khoảng</td><td>Epoch chỉ tiến về phía trước; không bao giờ tạo epoch đã có.</td><td><span class="pill p-bad">reject</span></td><td>—</td></tr>
+      <tr><td>Sửa báo cáo, sửa log</td><td>Chữ ký HMAC; chuỗi hash của log.</td><td><span class="pill p-bad">reject</span></td><td>—</td></tr>
+      <tr><td>Gửi lại báo cáo cũ (replay)</td><td>Session ID và nonce đã xử lý thì trả lại biên nhận cũ, không cộng thêm.</td><td><span class="pill p-info">duplicate</span></td><td>—</td></tr>
+      <tr><td>Hai phiên trùng thời gian (cài lại app, chạy song song)</td><td>Server lưu các khoảng thời gian đã thưởng theo thiết bị.</td><td><span class="pill p-bad">reject</span> epoch trùng</td><td>—</td></tr>
+      <tr><td>Jailbreak, Frida, tweak giả vị trí</td><td>File và đường dẫn của jailbreak; ghi được ngoài sandbox; thư viện hook đang nạp; biến môi trường chèn thư viện.</td><td><span class="pill p-bad">reject</span></td><td><code>rejectJailbreak</code>, <code>rejectHookingLibraries</code></td></tr>
+      <tr><td>Gắn debugger, chạy Simulator</td><td>Cờ <code>P_TRACED</code>; môi trường Simulator.</td><td><span class="pill p-info">info</span> (cấu hình được thành reject)</td><td><code>rejectDebugger</code>, <code>rejectSimulator</code></td></tr>
+      <tr><td>Farm nhiều phiên hoặc nhiều bước</td><td>Giới hạn ngày cho coin, bước, số phiên.</td><td>giới hạn</td><td><code>dailyCoinCap</code> 30 · <code>dailyStepCap</code> 25.000 · <code>maxSessionsPerDay</code> 10</td></tr>
+      <tr><td>Phiên rác quá ngắn</td><td>Dưới 120 giây.</td><td><span class="pill p-bad">reject</span></td><td><code>sessionMinSeconds</code></td></tr>
+      <tr><td>Tắt app để giấu dữ liệu</td><td>Phần bị bù được đánh dấu recovered và thưởng thấp hơn.</td><td><span class="pill p-info">info</span> ×0,7</td><td><code>recoveredMultiplier</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 9 -->
+<section id="dongho">
+  <h2><span class="n">09</span>Đồng hồ &amp; thời gian</h2>
+  <p>Thời gian quyết định số bước, giới hạn ngày và thứ tự dữ liệu, nên đây là mục tiêu tấn công phổ biến. App không tin đồng hồ thường của thiết bị.</p>
+  <ul>
+    <li><b>Đồng hồ đơn điệu</b> (<code>CLOCK_MONOTONIC</code> trên iOS) chạy cả khi máy ngủ và người dùng không chỉnh được. Mỗi mốc thời gian quan trọng lưu một cặp <i>(giờ thường, giờ đơn điệu, mã phiên khởi động)</i>.</li>
+    <li><b>Trong phiên:</b> mỗi heartbeat so sánh độ trôi của hai đồng hồ. Lệch quá 30 giây là bị chỉnh giờ: tiến thì gắn <code>clockTampered</code>, lùi thì gắn <code>clockMovedBackwards</code>.</li>
+    <li><b>Khi upload:</b> app gửi kèm mốc đồng hồ đơn điệu lúc gửi. Nếu máy chưa khởi động lại, server tính được <i>giờ kết thúc thật theo giờ server</i> = giờ server − (đơn điệu lúc gửi − đơn điệu lúc kết thúc). Cách này bắt được cả trường hợp chỉnh giờ <i>trước</i> khi bắt đầu phiên, vốn không thể phát hiện trên thiết bị.</li>
+    <li><b>Giới hạn ngày</b> tính theo ngày đã hiệu chỉnh về giờ server, nên đổi ngày trên máy không mở thêm được hạn mức.</li>
+    <li><b>Khởi động lại máy</b> được nhận ra nhờ mã phiên khởi động (<code>kern.bootsessionuuid</code>); khi đó so sánh đơn điệu không còn dùng được và hệ thống chuyển sang so sánh độ lệch giờ đơn giản.</li>
+  </ul>
+</section>
+
+<!-- 10 -->
+<section id="baomat">
+  <h2><span class="n">10</span>Bảo mật &amp; toàn vẹn dữ liệu</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Lớp</th><th>Cách làm</th><th>Chống được</th></tr></thead>
+    <tbody>
+      <tr><td>Định danh cài đặt</td><td>UUID ngẫu nhiên trong Keychain, còn sau khi gỡ và cài lại.</td><td>Reset app để nhận hạn mức mới; trùng phiên sau khi cài lại.</td></tr>
+      <tr><td>Khoá ký</td><td>Khoá 256-bit ngẫu nhiên trong Keychain, chỉ đọc được sau khi mở khoá máy, không sao lưu sang máy khác.</td><td>Sao chép báo cáo sang thiết bị khác.</td></tr>
+      <tr><td>Chữ ký báo cáo</td><td>HMAC-SHA256 trên đúng chuỗi byte được gửi; server kiểm chữ ký trước khi đọc nội dung.</td><td>Sửa số bước, epoch, cờ sau khi phiên kết thúc.</td></tr>
+      <tr><td>Phong bì upload</td><td>Ký thêm hash báo cáo cùng mốc thời gian lúc gửi.</td><td>Giả mốc thời gian upload để lách kiểm tra đồng hồ.</td></tr>
+      <tr><td>Nonce và session ID</td><td>Mỗi phiên một nonce ngẫu nhiên; server lưu nonce đã dùng.</td><td>Replay, gửi trùng.</td></tr>
+      <tr><td>Chuỗi hash log</td><td>Như mục 07.</td><td>Xoá sự kiện bất lợi (ví dụ <code>clockTampered</code>).</td></tr>
+      <tr><td>Kiểm tra thiết bị</td><td>Jailbreak, thư viện hook, debugger, Simulator, Low Power Mode, độ chính xác vị trí.</td><td>Môi trường đã bị can thiệp.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn">
+    <div class="t">Giới hạn quan trọng cần nói rõ với khách hàng</div>
+    <p>HMAC với khoá nằm trên thiết bị chỉ chứng minh <b>dữ liệu không bị sửa sau khi ký</b>. Nó không chứng minh dữ liệu đến từ app thật: người có kỹ năng có thể trích khoá trên máy đã jailbreak và tự viết client giả. Bản production <b>bắt buộc</b> phải dùng <b>App Attest</b> (DeviceCheck) để server xác nhận báo cáo được ký bởi đúng app chưa bị sửa, chạy trên iPhone thật. App đã kiểm tra thiết bị có hỗ trợ App Attest hay không; phần còn lại cần làm cùng server thật.</p>
+  </div>
+</section>
+
+<!-- 11 -->
+<section id="server">
+  <h2><span class="n">11</span>Xử lý phía server</h2>
+  <p>Mock server chạy trong app nhưng được viết như một server thật: nó chỉ nhận chuỗi byte đã ký, dùng cấu hình, đồng hồ và kho dữ liệu riêng. Thứ tự xử lý một báo cáo:</p>
+  <ol>
+    <li>Mô phỏng mạng: độ trễ và tỷ lệ lỗi cấu hình được, để kiểm thử hàng đợi gửi lại.</li>
+    <li>Kiểm chữ ký phong bì và chữ ký báo cáo. Sai thì từ chối, <code>signatureInvalid</code>.</li>
+    <li>Giải mã báo cáo. Lỗi thì từ chối, <code>malformedReport</code>.</li>
+    <li>Session ID đã xử lý thì trả lại biên nhận cũ với trạng thái <code>duplicate</code>, không cộng thêm coin. Nonce đã dùng cho phiên khác thì từ chối.</li>
+    <li>Kiểm chuỗi hash của log; phải có đủ <code>sessionStarted</code> và <code>sessionEnded</code>.</li>
+    <li>Hiệu chỉnh đồng hồ thiết bị so với giờ server (mục 09).</li>
+    <li>Từ chối dữ liệu nằm ở tương lai so với giờ server.</li>
+    <li>Kiểm giới hạn số phiên trong ngày.</li>
+    <li>Chạy lại toàn bộ <code>ActivityVerifier</code> từ epoch gốc, với cấu hình của server.</li>
+    <li>Loại các epoch trùng thời gian với phiên đã được thưởng của cùng thiết bị.</li>
+    <li>Tính coin bằng <code>RewardCalculator</code>, áp giới hạn bước và coin còn lại trong ngày.</li>
+    <li>Ghi sổ cái, khoảng thời gian đã thưởng, tổng theo ngày; trả biên nhận gồm coin, chi tiết từng epoch, toàn bộ cờ và lý do nếu bị từ chối.</li>
+  </ol>
+  <p>Phía app, <code>SyncService</code> ghi báo cáo đã ký vào outbox <i>trước</i> khi gửi; chỉ xoá khỏi outbox khi đã có biên nhận. Mất mạng hay bị kill giữa chừng đều không làm mất phiên, và server bảo đảm gửi lại nhiều lần vẫn chỉ được tính một lần.</p>
+</section>
+
+<!-- 12 -->
+<section id="coin">
+  <h2><span class="n">12</span>Công thức tính coin</h2>
+  <div class="formula">
+    coin(epoch) = ( bước_thưởng / 1000 × đơn_giá[đi bộ | chạy]<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ km_GPS_xác_minh × coin_mỗi_km )<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;× trust × hệ_số_nguồn<br><br>
+    trust = max(0, 1 − 0,15 × số_cảnh_báo)&nbsp;&nbsp;&nbsp;&nbsp;hệ_số_nguồn = 1 (live có GPS) | 0,85 (live không GPS) | 0,7 (recovered)<br>
+    coin(phiên) = min( Σ coin(epoch) sau giới hạn bước/ngày , coin_còn_lại_trong_ngày )
+  </div>
+  <ul>
+    <li><b>Đơn giá mặc định:</b> 1,0 coin / 1000 bước đi bộ; 1,4 coin / 1000 bước chạy (cadence từ 145 bước/phút hoặc CoreMotion báo chạy); 0,3 coin / km GPS đã xác minh.</li>
+    <li><b>km GPS xác minh</b> = min(quãng đường GPS, số bước × 2,5 m), chỉ tính cho epoch có đủ GPS.</li>
+    <li>Epoch dưới 10 bước không được thưởng (không phải gian lận, chỉ là nghỉ).</li>
+    <li>Coin được làm tròn <b>xuống</b> 3 chữ số thập phân để không bao giờ trả dư.</li>
+  </ul>
+  <h3>Ví dụ thực tế (chạy trên Simulator, ngày 17/10/2026)</h3>
+  <p>Phiên 12 epoch đi qua foreground, background, bị kill 3 phút, mở lại rồi kết thúc. Bước chân lấy từ nguồn replay của bản debug. Cấu hình lab hạ GPS giả lập của Simulator xuống mức cảnh báo, nên các epoch live có trust 0,85.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Epoch</th><th>Loại</th><th>Bước</th><th>GPS (m)</th><th>Trust</th><th>Hệ số</th><th>Coin</th></tr></thead>
+    <tbody>
+      <tr><td>#0</td><td><span class="pill p-good">live</span> foreground</td><td class="num">105</td><td class="num">79</td><td class="num">0,85</td><td class="num">1,0</td><td class="num">0,109</td></tr>
+      <tr><td>#2</td><td><span class="pill p-good">live</span> background</td><td class="num">114</td><td class="num">85</td><td class="num">0,85</td><td class="num">1,0</td><td class="num">0,118</td></tr>
+      <tr><td>#6</td><td><span class="pill p-warn">recovered</span> lúc bị kill</td><td class="num">112</td><td class="num">0</td><td class="num">1,00</td><td class="num">0,7</td><td class="num">0,078</td></tr>
+      <tr><td colspan="2"><b>Cả phiên (12 epoch)</b></td><td class="num"><b>1213</b></td><td class="num">655*</td><td></td><td></td><td class="num"><b>1,148</b></td></tr>
+    </tbody>
+  </table></div>
+  <p>Kiểm chứng #0: 105 / 1000 × 1,0 × 0,85 = 0,0893 coin từ bước, cộng 0,079 km × 0,3 × 0,85 = 0,0201 coin từ quãng đường, tổng 0,109. Tổng 1213 bước khớp chính xác với nguồn dữ liệu trong suốt phiên, và tính tay toàn phiên ra đúng 1,148 coin như server trả về. <span style="color:var(--muted)">*Quãng đường GPS đã xác minh của các epoch live.</span></p>
+</section>
+
+<!-- 13 -->
+<section id="config">
+  <h2><span class="n">13</span>Cấu hình</h2>
+  <p>Mọi tham số nằm trong <code>RewardConfig</code>, sửa được trong app (Cài đặt → Config, dạng form hoặc JSON). Mỗi lần thay đổi, số phiên bản cấu hình tăng lên và được ghi vào báo cáo, để biết mỗi phiên được chấm theo phiên bản nào. Khi có server, cấu hình này sẽ do server cấp.</p>
+  <h3>Phần thưởng</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tham số</th><th>Mặc định</th><th>Ý nghĩa</th><th>Tăng lên thì</th></tr></thead>
+    <tbody>
+      <tr><td><code>coinsPer1000StepsWalking</code></td><td class="num">1,0</td><td>Đơn giá đi bộ</td><td>Phát hành nhiều coin hơn</td></tr>
+      <tr><td><code>coinsPer1000StepsRunning</code></td><td class="num">1,4</td><td>Đơn giá chạy</td><td>Khuyến khích cường độ cao</td></tr>
+      <tr><td><code>coinsPerVerifiedKm</code></td><td class="num">0,3</td><td>Thưởng quãng đường ngoài trời</td><td>Ưu tiên hoạt động ngoài trời</td></tr>
+      <tr><td><code>recoveredMultiplier</code></td><td class="num">0,7</td><td>Hệ số phần khôi phục</td><td>Bớt "phạt" người dùng không cho chạy nền</td></tr>
+      <tr><td><code>noGpsMultiplier</code></td><td class="num">0,85</td><td>Hệ số khi không có GPS (trong nhà, máy chạy bộ)</td><td>Thân thiện hơn với người tập trong nhà</td></tr>
+      <tr><td><code>minEpochSteps</code></td><td class="num">10</td><td>Số bước tối thiểu để một epoch được thưởng</td><td>Bỏ qua nhiều phút "lắt nhắt" hơn</td></tr>
+      <tr><td><code>minTrustToReward</code></td><td class="num">0,4</td><td>Trust tối thiểu</td><td>Chặt hơn, dễ phạt oan hơn</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Giới hạn</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tham số</th><th>Mặc định</th><th>Ý nghĩa</th></tr></thead>
+    <tbody>
+      <tr><td><code>dailyCoinCap</code></td><td class="num">30</td><td>Coin tối đa mỗi ngày</td></tr>
+      <tr><td><code>dailyStepCap</code></td><td class="num">25.000</td><td>Bước được thưởng tối đa mỗi ngày</td></tr>
+      <tr><td><code>maxSessionsPerDay</code></td><td class="num">10</td><td>Số phiên tối đa mỗi ngày</td></tr>
+      <tr><td><code>sessionMinSeconds</code> / <code>sessionMaxSeconds</code></td><td class="num">120 / 14.400</td><td>Thời lượng phiên tối thiểu / tối đa (4 giờ)</td></tr>
+      <tr><td><code>maxRecoveryGapSeconds</code></td><td class="num">21.600</td><td>Khoảng trống tối đa được bù (6 giờ)</td></tr>
+      <tr><td><code>autoEndIdleMinutes</code></td><td class="num">30</td><td>Tự kết thúc khi đứng yên</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Ngưỡng chống gian lận</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tham số</th><th>Mặc định</th><th>Ý nghĩa</th></tr></thead>
+    <tbody>
+      <tr><td><code>vehicleSpeedMps</code></td><td class="num">7,5 m/s</td><td>Tốc độ trung bình một epoch coi là đi xe (≈ 27 km/h)</td></tr>
+      <tr><td><code>maxInstantSpeedMps</code></td><td class="num">11 m/s</td><td>Tốc độ tức thời đáng ngờ</td></tr>
+      <tr><td><code>teleportSpeedMps</code> / <code>teleportMinDistance</code></td><td class="num">60 m/s / 100 m</td><td>Ngưỡng vị trí nhảy</td></tr>
+      <tr><td><code>cadenceMax</code> / <code>runningCadence</code></td><td class="num">240 / 145</td><td>Bước/phút tối đa; ngưỡng tính là chạy</td></tr>
+      <tr><td><code>strideMin</code> / <code>strideMax</code></td><td class="num">0,25 / 2,5 m</td><td>Khoảng sải chân hợp lý</td></tr>
+      <tr><td><code>gpsPedometerMismatchRatio</code></td><td class="num">2,5</td><td>Lệch quãng đường GPS và pedometer</td></tr>
+      <tr><td><code>minGpsPointsForCoverage</code></td><td class="num">5</td><td>Số điểm GPS tối thiểu để coi là có GPS</td></tr>
+      <tr><td><code>stepsWithoutMovementMinSteps</code> / <code>…MaxDisplacement</code></td><td class="num">60 / 12 m</td><td>Có bước mà không di chuyển</td></tr>
+      <tr><td><code>roboticRhythmCV</code> / <code>roboticMinPeaks</code></td><td class="num">0,012 / 40</td><td>Nhịp gia tốc kế "máy móc"</td></tr>
+      <tr><td><code>roboticSessionCadenceCV</code> / <code>…MinEpochs</code></td><td class="num">0,006 / 8</td><td>Cadence không đổi qua nhiều phút</td></tr>
+      <tr><td><code>automotiveFractionReject</code> / <code>cyclingFractionReject</code></td><td class="num">25% / 50%</td><td>Tỷ lệ thời gian ô tô / xe đạp để loại</td></tr>
+      <tr><td><code>stationaryFractionWarn</code></td><td class="num">80%</td><td>"Đứng yên" mà có bước</td></tr>
+      <tr><td><code>clockToleranceSeconds</code></td><td class="num">30 s</td><td>Dung sai lệch đồng hồ</td></tr>
+      <tr><td><code>warningPenalty</code></td><td class="num">0,15</td><td>Trust bị trừ mỗi cảnh báo</td></tr>
+      <tr><td><code>reject…</code> (8 công tắc)</td><td>—</td><td>Fake GPS, huỷ phiên khi spoof, chỉnh giờ, jailbreak, hook, debugger, Simulator, nguồn replay</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Tracking &amp; mock server</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tham số</th><th>Mặc định</th><th>Ý nghĩa / đánh đổi</th></tr></thead>
+    <tbody>
+      <tr><td><code>epochSeconds</code></td><td class="num">60</td><td>Ngắn hơn thì chi tiết hơn nhưng báo cáo nặng hơn</td></tr>
+      <tr><td><code>checkpointSeconds</code></td><td class="num">10</td><td>Ngắn hơn thì ít mất dữ liệu hơn nhưng ghi đĩa nhiều hơn</td></tr>
+      <tr><td><code>heartbeatSeconds</code></td><td class="num">5</td><td>Độ mịn của việc đo "khoảng sống"</td></tr>
+      <tr><td><code>gpsMaxAccuracy</code></td><td class="num">50 m</td><td>Bỏ điểm GPS sai số lớn hơn</td></tr>
+      <tr><td><code>gpsDistanceFilter</code></td><td class="num">0 (mọi điểm)</td><td>Tăng lên thì tiết kiệm pin, nhưng khó phát hiện đứng yên</td></tr>
+      <tr><td><code>motionSampleHz</code></td><td class="num">25</td><td>Tăng lên thì phân tích nhịp chính xác hơn, tốn pin hơn</td></tr>
+      <tr><td><code>latencyMs</code> / <code>failureRate</code></td><td class="num">400 / 0</td><td>Mô phỏng độ trễ và lỗi mạng của mock server</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 14 -->
+<section id="kiemthu">
+  <h2><span class="n">14</span>Kiểm thử &amp; kết quả</h2>
+  <h3>Kịch bản trung thực và gian lận (Scenario Lab)</h3>
+  <p>Mỗi kịch bản sinh dữ liệu cảm biến tổng hợp (có tính ngẫu nhiên nhưng tái lập được), chạy qua đúng pipeline thật: dựng epoch, lập báo cáo, ký HMAC, gửi lên một mock server riêng. Chạy được ngay trong app (Cài đặt → Scenario Lab) và trong test tự động. <b>Kết quả: 20/20 đúng kỳ vọng.</b></p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Kịch bản</th><th>Kỳ vọng</th><th>Kết quả server</th><th>Coin</th><th>Epoch hợp lệ</th><th>Cờ chính</th></tr></thead>
+    <tbody>
+      <tr><td>Đi bộ hợp lệ (20 phút)</td><td>Thưởng</td><td><span class="pill p-good">credited</span></td><td class="num">2,625</td><td class="num">20/20</td><td>—</td></tr>
+      <tr><td>Chạy bộ hợp lệ</td><td>Thưởng</td><td><span class="pill p-good">credited</span></td><td class="num">5,764</td><td class="num">20/20</td><td>—</td></tr>
+      <tr><td>Kill app giữa chừng → khôi phục</td><td>Thưởng, thấp hơn</td><td><span class="pill p-good">credited</span></td><td class="num">1,951</td><td class="num">20/20</td><td>recoveredData</td></tr>
+      <tr><td>Máy chạy bộ (không GPS)</td><td>Thưởng ×0,85</td><td><span class="pill p-good">credited</span></td><td class="num">1,845</td><td class="num">20/20</td><td>noGpsCoverage</td></tr>
+      <tr><td>Lắc tay tại chỗ</td><td>Thưởng, có cảnh báo</td><td><span class="pill p-good">credited</span></td><td class="num">1,741</td><td class="num">20/20</td><td>stepsWithoutMovement</td></tr>
+      <tr><td>Vượt giới hạn coin/ngày (cap 1,0)</td><td>Bị giới hạn</td><td><span class="pill p-good">credited</span></td><td class="num">1,000</td><td class="num">20/20</td><td>dailyCoinCap</td></tr>
+      <tr><td>Đi ô tô</td><td>0 coin</td><td><span class="pill p-warn">0 coin</span></td><td class="num">0</td><td class="num">0/20</td><td>vehicleSpeed, automotiveActivity</td></tr>
+      <tr><td>Lắc điện thoại trên ô tô</td><td>0 coin</td><td><span class="pill p-warn">0 coin</span></td><td class="num">0</td><td class="num">0/20</td><td>automotiveActivity, strideImplausible</td></tr>
+      <tr><td>Đạp xe</td><td>0 coin</td><td><span class="pill p-warn">0 coin</span></td><td class="num">0</td><td class="num">0/20</td><td>cyclingActivity</td></tr>
+      <tr><td>Máy lắc điện thoại</td><td>0 coin</td><td><span class="pill p-warn">0 coin</span></td><td class="num">0</td><td class="num">0/20</td><td>roboticRhythm (≥ 2 dấu hiệu)</td></tr>
+      <tr><td>Bước chân bất khả thi (400/phút)</td><td>0 coin</td><td><span class="pill p-warn">0 coin</span></td><td class="num">0</td><td class="num">0/20</td><td>cadenceTooHigh</td></tr>
+      <tr><td>2 phiên trùng thời gian</td><td>Phiên sau 0 coin</td><td><span class="pill p-warn">0 coin</span></td><td class="num">0</td><td class="num">0/20</td><td>overlapsCreditedSession</td></tr>
+      <tr><td>Fake GPS (simulated)</td><td>Từ chối</td><td><span class="pill p-bad">rejected</span></td><td class="num">0</td><td class="num">0/20</td><td>simulatedLocation</td></tr>
+      <tr><td>GPS nhảy (teleport) ở 1 epoch</td><td>Từ chối cả phiên</td><td><span class="pill p-bad">rejected</span></td><td class="num">0</td><td class="num">0/20</td><td>teleport</td></tr>
+      <tr><td>Chỉnh giờ trong phiên (+1 giờ)</td><td>Từ chối</td><td><span class="pill p-bad">rejected</span></td><td class="num">0</td><td class="num">0/20</td><td>clockTampered</td></tr>
+      <tr><td>Chỉnh giờ trước khi chạy (−1 ngày)</td><td>Từ chối</td><td><span class="pill p-bad">rejected</span></td><td class="num">0</td><td class="num">0/20</td><td>clockTampered (lệch −86.400 s)</td></tr>
+      <tr><td>Thiết bị jailbreak</td><td>Từ chối</td><td><span class="pill p-bad">rejected</span></td><td class="num">0</td><td class="num">0/20</td><td>jailbroken</td></tr>
+      <tr><td>Sửa payload sau khi ký (×5 bước)</td><td>Từ chối</td><td><span class="pill p-bad">rejected</span></td><td class="num">0</td><td class="num">—</td><td>signatureInvalid</td></tr>
+      <tr><td>Session quá ngắn (60 s)</td><td>Từ chối</td><td><span class="pill p-bad">rejected</span></td><td class="num">0</td><td class="num">0/1</td><td>sessionTooShort</td></tr>
+      <tr><td>Gửi lại báo cáo (replay)</td><td>Không cộng thêm</td><td><span class="pill p-info">duplicate</span></td><td class="num">2,625</td><td class="num">20/20</td><td>Số dư vẫn 2,625</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Test tự động: 32 test, 8 nhóm, tất cả đạt</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Nhóm</th><th>Nội dung kiểm tra</th></tr></thead>
+    <tbody>
+      <tr><td>Vòng đời phiên (11 test)</td><td>Phiên live; app bị tạm dừng rồi bù dữ liệu; kill và khôi phục; khoảng trống quá dài; chỉnh giờ tiến và lùi (không đếm trùng); khởi động lại máy; tự kết thúc khi đứng yên; quá thời lượng; giữ GPS qua kill; fake GPS khi đang chạy; ghi đúng foreground/background cho từng epoch.</td></tr>
+      <tr><td>Dựng epoch (5)</td><td>Tỷ lệ hoạt động; độ tin cậy thấp; nhiễu GPS khi đứng yên; teleport và điểm sai số lớn; khoảng sống.</td></tr>
+      <tr><td>Gia tốc kế (3)</td><td>Nhịp máy, nhịp người, máy nằm yên.</td></tr>
+      <tr><td>Bảo mật (5)</td><td>Chuỗi hash phát hiện sửa, xoá, đảo; log còn nguyên qua lần mở lại; phát hiện file log bị cắt; chữ ký; so sánh đồng hồ.</td></tr>
+      <tr><td>Tính thưởng (3)</td><td>Giới hạn bước, làm tròn không trả dư, cấu hình xuất/nhập và tăng phiên bản.</td></tr>
+      <tr><td>Kịch bản (2)</td><td>20 kịch bản ở trên; dữ liệu khôi phục được thưởng ít hơn dữ liệu live.</td></tr>
+      <tr><td>Nguồn replay (2)</td><td>Lịch sử cộng dồn được, không đếm trùng; báo cáo từ nguồn replay bị gắn cờ.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Chạy trên app thật (Simulator iOS 26.2)</h3>
+  <ul>
+    <li><b>Phiên với GPS giả lập của Simulator:</b> live UI phát hiện 100% điểm là giả lập; kill app rồi mở lại, phiên được khôi phục với cờ <code>appRelaunched</code> ("gap 108s"); server từ chối với lý do <code>simulatedLocation</code>.</li>
+    <li><b>Phiên đầy đủ có bước chân:</b> foreground 2,5 phút → background 3 phút (epoch vẫn live) → kill 3 phút (3 epoch được bù 112/114/107 bước) → mở lại → kết thúc. Kết quả: 1213/1213 bước, epoch liền mạch, 1,148 coin khớp tính tay.</li>
+  </ul>
+  <div class="note">
+    <div class="t">Lỗi đã phát hiện và sửa nhờ kiểm thử</div>
+    <ul>
+      <li>App crash khi chuyển xuống nền lúc đang có phiên: một lệnh vừa đọc vừa ghi cùng một thuộc tính. Đã sửa, đã kiểm lại trên app.</li>
+      <li>Epoch quan sát lúc chạy nền bị ghi là foreground nếu được đóng sau khi app mở lại. Đã sửa bằng lịch sử chuyển trạng thái.</li>
+      <li>Quyền "Chuyển động" bị hỏi sau khi phiên đã chạy, khiến các phút đầu có 0 bước. Giờ app hỏi quyền trước khi bắt đầu.</li>
+      <li>Lỗi ABI của Swift khiến callback giữa các module làm hỏng dữ liệu. Đã khai báo tường minh và có test bảo vệ.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 15 -->
+<section id="danhgia">
+  <h2><span class="n">15</span>Ưu điểm, nhược điểm &amp; so sánh</h2>
+  <div class="cols">
+    <div class="col pro"><h4>Ưu điểm</h4><ul>
+      <li>Không mất bước trong mọi trạng thái app, kể cả bị kill hay khởi động lại máy.</li>
+      <li>Nguồn bước khó giả mạo nhất trên iOS; HealthKit chỉ dùng để đối chiếu.</li>
+      <li>Phát hiện đa tín hiệu, phạt theo mức độ, ít phạt oan.</li>
+      <li>Server là trọng tài, quyết định tái lập được, idempotent.</li>
+      <li>Có bằng chứng: log nối chuỗi hash, cờ chi tiết theo từng phút.</li>
+      <li>Mọi con số cấu hình được; thay mock server bằng server thật không ảnh hưởng tracking.</li>
+      <li>Có công cụ kiểm thử gian lận trong app (Scenario Lab) và 32 test tự động.</li>
+    </ul></div>
+    <div class="col con"><h4>Nhược điểm và rủi ro</h4><ul>
+      <li><b>Pin:</b> GPS 1 Hz và gia tốc kế 25 Hz suốt phiên tốn pin đáng kể; cần đo trên thiết bị thật.</li>
+      <li><b>Quyền riêng tư:</b> thu thập tuyến đường chi tiết; cần chính sách quyền riêng tư rõ ràng.</li>
+      <li><b>Trong nhà và máy chạy bộ:</b> không phân biệt chắc chắn được với lắc tay; đang xử lý bằng hệ số 0,85 và cảnh báo.</li>
+      <li><b>Phần khôi phục</b> chỉ có bước và hoạt động, không có GPS, nên tin cậy thấp hơn.</li>
+      <li><b>HMAC chưa đủ</b> trước client giả trên máy jailbreak; cần App Attest.</li>
+      <li><b>Phát hiện jailbreak</b> có thể bị vượt qua bởi công cụ ẩn jailbreak; chỉ là một lớp phòng thủ.</li>
+      <li><b>Người dùng không cấp quyền "Luôn luôn"</b> thì chỉ được thưởng ×0,7 cho phần chạy nền.</li>
+    </ul></div>
+  </div>
+  <h3>So sánh với các cách làm đơn giản hơn</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tiêu chí</th><th>Chỉ đọc HealthKit</th><th>Chỉ dùng GPS</th><th>Giải pháp này</th></tr></thead>
+    <tbody>
+      <tr><td>Chống bước giả từ app khác</td><td><span class="pill p-bad">Không</span></td><td><span class="pill p-warn">Không áp dụng</span></td><td><span class="pill p-good">Có</span></td></tr>
+      <tr><td>Chống đi xe</td><td><span class="pill p-bad">Yếu</span></td><td><span class="pill p-good">Có</span></td><td><span class="pill p-good">Có, nhiều tín hiệu</span></td></tr>
+      <tr><td>Chống fake GPS</td><td><span class="pill p-warn">Không áp dụng</span></td><td><span class="pill p-bad">Yếu</span></td><td><span class="pill p-good">Có</span></td></tr>
+      <tr><td>Chống máy lắc</td><td><span class="pill p-bad">Không</span></td><td><span class="pill p-good">Có (không di chuyển)</span></td><td><span class="pill p-good">Có</span></td></tr>
+      <tr><td>Hoạt động trong nhà</td><td><span class="pill p-good">Có</span></td><td><span class="pill p-bad">Không</span></td><td><span class="pill p-good">Có, hệ số thấp hơn</span></td></tr>
+      <tr><td>Không mất dữ liệu khi kill app</td><td><span class="pill p-good">Có</span></td><td><span class="pill p-bad">Không</span></td><td><span class="pill p-good">Có</span></td></tr>
+      <tr><td>Chống chỉnh giờ, replay, sửa dữ liệu</td><td><span class="pill p-bad">Không</span></td><td><span class="pill p-bad">Không</span></td><td><span class="pill p-good">Có</span></td></tr>
+      <tr><td>Tốn pin</td><td><span class="pill p-good">Thấp</span></td><td><span class="pill p-bad">Cao</span></td><td><span class="pill p-warn">Cao, tối ưu được</span></td></tr>
+      <tr><td>Độ phức tạp</td><td><span class="pill p-good">Thấp</span></td><td><span class="pill p-warn">Trung bình</span></td><td><span class="pill p-warn">Cao</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 16 -->
+<section id="toiuu">
+  <h2><span class="n">16</span>Tối ưu &amp; khuyến nghị</h2>
+  <h3>Pin</h3>
+  <ul>
+    <li><b>GPS thích ứng:</b> dùng 1 Hz khi tốc độ và hoạt động đáng ngờ; giảm tần suất khi CoreMotion xác nhận đi bộ ổn định nhiều phút liền.</li>
+    <li><b>Gia tốc kế theo mẫu:</b> chỉ lấy mẫu vài đoạn 10 giây mỗi epoch thay vì liên tục.</li>
+    <li>Ghi vào log khi Low Power Mode bật (đã có) và cho phép server nới ngưỡng tương ứng.</li>
+  </ul>
+  <h3>Chống gian lận</h3>
+  <ul>
+    <li><b>App Attest</b> cho mọi báo cáo: ưu tiên cao nhất khi có server thật.</li>
+    <li><b>Phân tích hành vi phía server:</b> so sánh người dùng với chính lịch sử của họ (tốc độ, giờ giấc, tuyến đường lặp lại) và giữa các tài khoản (nhiều tài khoản trên một thiết bị, tuyến đường giống hệt nhau).</li>
+    <li><b>Đối chiếu HealthKit có độ trễ:</b> server kiểm lại số bước iPhone trong HealthKit sau vài giờ, khi dữ liệu đã được ghi đủ.</li>
+    <li><b>Apple Watch:</b> nhịp tim và bước từ cổ tay là tín hiệu rất khó giả cùng lúc với điện thoại.</li>
+  </ul>
+  <h3>Sản phẩm và tuân thủ</h3>
+  <ul>
+    <li>Giải thích rõ cho người dùng vì sao cần quyền "Luôn luôn" và vì sao phần khôi phục được thưởng ít hơn.</li>
+    <li>Hiển thị lý do khi epoch bị loại để giảm khiếu nại; đã có sẵn dữ liệu.</li>
+    <li>Kiểm tra quy định App Store về quyền vị trí nền, dữ liệu sức khoẻ và phần thưởng có giá trị trước khi phát hành.</li>
+    <li>Mã hoá hoặc giảm độ chi tiết tuyến đường trước khi lưu lâu dài trên server.</li>
+  </ul>
+</section>
+
+<!-- 17 -->
+<section id="hanche">
+  <h2><span class="n">17</span>Hạn chế hiện tại &amp; lộ trình</h2>
+  <div class="note warn">
+    <div class="t">Cần làm trước khi phát hành</div>
+    <ul>
+      <li><b>Chưa kiểm thử trên iPhone thật.</b> Pedometer thật, chạy nền nhiều giờ, iOS tự mở lại app sau khi kill, và các hành vi gian lận ngoài đời (đi xe, máy lắc) mới chỉ được kiểm bằng dữ liệu tổng hợp và Simulator.</li>
+      <li><b>Phiên bản iOS tối thiểu là iOS 15.0.</b> Các API mới hơn chỉ được dùng khi có sẵn (ví dụ <code>CLBackgroundActivitySession</code> trên iOS 17+); trên iOS 15–16 app vẫn chạy nền nhờ chế độ nền vị trí. Đã build thành công cho thiết bị thật, nhưng chưa chạy trên máy iOS 15–16 thật.</li>
+      <li><b>Server thật</b> chưa có: mock server dùng chung cấu hình và khoá với app; server thật phải giữ cấu hình và đăng ký khoá riêng.</li>
+      <li><b>App Attest</b> chưa được tích hợp đầy đủ.</li>
+    </ul>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Giai đoạn</th><th>Nội dung</th></tr></thead>
+    <tbody>
+      <tr><td><b>Tiếp theo</b></td><td>Chốt phiên bản iOS tối thiểu; kiểm thử thực địa trên nhiều iPhone (đi bộ, chạy, đi xe, máy lắc, chạy nền 2–4 giờ, vuốt tắt, khởi động lại); đo pin.</td></tr>
+      <tr><td><b>Server</b></td><td>API thật thay cho mock (giữ nguyên giao diện <code>RewardAPI</code>); App Attest; remote config; sổ cái và ví phía server.</td></tr>
+      <tr><td><b>Nâng cao</b></td><td>GPS thích ứng; phân tích hành vi; đối chiếu HealthKit có độ trễ; Apple Watch; Live Activity hiển thị phiên trên màn hình khoá.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 18 -->
+<section id="phuluc">
+  <h2><span class="n">18</span>Phụ lục</h2>
+  <h3>Thuật ngữ</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Thuật ngữ</th><th>Giải thích</th></tr></thead>
+    <tbody>
+      <tr><td>Phiên (session)</td><td>Một lần người dùng bấm Bắt đầu đến khi kết thúc.</td></tr>
+      <tr><td>Epoch</td><td>Cửa sổ 60 giây trong phiên, đơn vị xác minh và tính thưởng.</td></tr>
+      <tr><td>Live / Recovered</td><td>Epoch quan sát trực tiếp / dựng lại từ lịch sử CoreMotion.</td></tr>
+      <tr><td>Cadence</td><td>Số bước mỗi phút.</td></tr>
+      <tr><td>Stride (sải chân)</td><td>Quãng đường chia cho số bước.</td></tr>
+      <tr><td>CV</td><td>Hệ số biến thiên = độ lệch chuẩn / trung bình; càng nhỏ thì càng đều.</td></tr>
+      <tr><td>Trust</td><td>Độ tin cậy của epoch, từ 0 đến 1, giảm theo số cảnh báo.</td></tr>
+      <tr><td>Checkpoint</td><td>Lưu trạng thái phiên xuống đĩa.</td></tr>
+      <tr><td>Đồng hồ đơn điệu</td><td>Đồng hồ chỉ tăng, chạy cả khi máy ngủ, người dùng không chỉnh được.</td></tr>
+      <tr><td>HMAC</td><td>Chữ ký dùng khoá bí mật, phát hiện dữ liệu bị sửa.</td></tr>
+      <tr><td>Hash chain</td><td>Chuỗi bản ghi, mỗi bản ghi chứa hash của bản ghi trước.</td></tr>
+      <tr><td>Idempotent</td><td>Gửi nhiều lần cũng chỉ có tác dụng như gửi một lần.</td></tr>
+      <tr><td>Outbox</td><td>Hàng đợi báo cáo đã ký nằm trên đĩa, chờ gửi.</td></tr>
+      <tr><td>App Attest</td><td>Dịch vụ của Apple xác nhận yêu cầu đến từ đúng app trên iPhone thật.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Cấu trúc một báo cáo phiên</h3>
+<pre class="code">SignedReport
+├─ payload (JSON đã ký)
+│  ├─ sessionId, nonce, deviceId, appVersion, osVersion, deviceModel, configVersion
+│  ├─ startedAt, endedAt, endReason, startAnchor, endAnchor
+│  ├─ epochs[ ]              ← dữ liệu tóm tắt theo từng phút
+│  ├─ routePointCount, routeDistance, routeHash
+│  ├─ healthKit              ← iPhone / Watch / app khác / nhập tay
+│  ├─ integrity              ← jailbreak, debugger, hook, simulator…
+│  ├─ clientFlags[ ]         ← relaunch, đổi giờ, reboot, mất quyền…
+│  ├─ events[ ]              ← đoạn log hash chain của phiên
+│  └─ sensorSource           ← coremotion | replay (debug)
+├─ payloadHash (SHA-256)
+├─ signature (HMAC-SHA256)
+└─ keyId</pre>
+</section>
+
+<footer>
+  Tài liệu mô tả mã nguồn dự án HealthKitExample2 (Move2Earn), phiên bản ngày 17/10/2026. Số liệu kiểm thử lấy từ lần chạy test và Simulator cùng ngày.
+</footer>
+</main>
+</div>
