@@ -16,6 +16,7 @@ final class AppEnvironment {
     let sync: SyncService
     let session: SessionManager
     let location: LocationProvider
+    let passiveSync: PassiveSyncService
 
     private init() {
         let root = FileStore.app
@@ -56,6 +57,13 @@ final class AppEnvironment {
         self.sync = sync
         self.session = session
         self.location = location
+        let passiveServer = MockPassiveServer(store: root.sub("mock_server"))
+        self.passiveSync = PassiveSyncService(
+            store: PassiveSyncStore(store: root.sub("passive_sync")),
+            healthKit: HealthKitProvider.shared,
+            server: passiveServer,
+            logger: logger
+        )
     }
 
     /// Runs on every process launch, including silent background relaunches.
@@ -68,6 +76,7 @@ final class AppEnvironment {
     func wipeAll() {
         session.discard()
         history.wipe()
+        passiveSync.clearLogs()
         server.reset()
         FileStore.app.sub("outbox").wipe()
         Task { await wallet.refresh() }

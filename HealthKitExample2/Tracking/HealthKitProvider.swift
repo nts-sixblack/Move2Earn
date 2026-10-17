@@ -36,16 +36,7 @@ nonisolated final class HealthKitProvider: @unchecked Sendable {
     }
 
     func summary(from: Date, to: Date) async -> HealthKitSummary? {
-        guard isAvailable, await hasRequestedAuthorization() else { return nil }
-        let samples: [HKQuantitySample]? = await withCheckedContinuation { continuation in
-            let query = HKSampleQuery(sampleType: stepType,
-                                      predicate: HKQuery.predicateForSamples(withStart: from, end: to),
-                                      limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, results, error in
-                continuation.resume(returning: error == nil ? (results as? [HKQuantitySample] ?? []) : nil)
-            }
-            store.execute(query)
-        }
-        guard let samples else { return nil }
+        guard let samples = await fetchStepSamples(from: from, to: to) else { return nil }
         var summary = HealthKitSummary(authorized: true, iPhoneSteps: 0, watchSteps: 0, thirdPartySteps: 0,
                                        manualSteps: 0, thirdPartySources: [])
         var sources = Set<String>()
@@ -64,6 +55,20 @@ nonisolated final class HealthKitProvider: @unchecked Sendable {
         }
         summary.thirdPartySources = sources.sorted()
         return summary
+    }
+
+    /// Fetches raw step count samples within a time window for analysis.
+    func fetchStepSamples(from: Date, to: Date) async -> [HKQuantitySample]? {
+        guard isAvailable, await hasRequestedAuthorization() else { return nil }
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(sampleType: stepType,
+                                      predicate: HKQuery.predicateForSamples(withStart: from, end: to),
+                                      limit: HKObjectQueryNoLimit,
+                                      sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]) { _, results, error in
+                continuation.resume(returning: error == nil ? (results as? [HKQuantitySample] ?? []) : nil)
+            }
+            store.execute(query)
+        }
     }
 
     /// Wakes the app (even after it was terminated) when new step samples land.

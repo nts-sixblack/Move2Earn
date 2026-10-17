@@ -11,6 +11,7 @@ struct RootView: View {
     var body: some View {
         TabView {
             MoveView().tabItem { Label("Move", systemImage: "figure.walk") }
+            PassiveSyncView().tabItem { Label("Passive HK", systemImage: "heart.text.square") }
             HistoryView().tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
             LogsView().tabItem { Label("Logs", systemImage: "list.bullet.rectangle") }
             SettingsView().tabItem { Label("Settings", systemImage: "gearshape") }

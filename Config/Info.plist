@@ -16,10 +16,12 @@
 	<array>
 		<string>location</string>
 		<string>fetch</string>
+		<string>processing</string>
 	</array>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.sixpilot.HealthKitExample.refresh</string>
+		<string>com.sixpilot.HealthKitExample.processing</string>
 	</array>
 </dict>
 </plist>

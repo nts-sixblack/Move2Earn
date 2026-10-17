@@ -11,6 +11,7 @@ import UIKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     static let refreshTaskId = "com.sixpilot.HealthKitExample.refresh"
+    static let processingTaskId = "com.sixpilot.HealthKitExample.processing"
 
     private var isRunningTests: Bool { ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil }
 
@@ -31,8 +32,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             guard let task = task as? BGAppRefreshTask else { return }
             Task { @MainActor in
                 AppDelegate.scheduleRefresh()
-                env.logger.log("backgroundRefresh")
+                _ = env.logger.log("backgroundRefresh")
                 await env.bootstrap(reason: "bgRefresh")
+                await env.passiveSync.sync(trigger: .bgAppRefresh)
                 task.setTaskCompleted(success: true)
             }
             task.expirationHandler = {
@@ -40,9 +42,23 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             }
         }
 
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.processingTaskId, using: nil) { task in
+            guard let task = task as? BGProcessingTask else { return }
+            Task { @MainActor in
+                AppDelegate.scheduleProcessing()
+                _ = env.logger.log("backgroundProcessing")
+                await env.passiveSync.sync(trigger: .bgProcessing)
+                task.setTaskCompleted(success: true)
+            }
+            task.expirationHandler = {
+                // Background processing expired
+            }
+        }
+
         HealthKitProvider.shared.enableBackgroundDelivery {
             await MainActor.run { _ = env.logger.log("healthKitWake") }
             await env.bootstrap(reason: "healthKitWake")
+            await env.passiveSync.sync(trigger: .healthKitWake)
         }
 
         let center = NotificationCenter.default
@@ -68,6 +84,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         if application.applicationState == .background { env.session.setPhase(.background) }
         Task { await env.bootstrap(reason: reason) }
         Self.scheduleRefresh()
+        Self.scheduleProcessing()
         return true
     }
 
@@ -78,11 +95,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
     func applicationDidEnterBackground(_ application: UIApplication) {
         Self.scheduleRefresh()
+        Self.scheduleProcessing()
     }
 
     static func scheduleRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: refreshTaskId)
         request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
+        try? BGTaskScheduler.shared.submit(request)
+    }
+
+    static func scheduleProcessing() {
+        let request = BGProcessingTaskRequest(identifier: processingTaskId)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
+        request.requiresNetworkConnectivity = true
+        request.requiresExternalPower = false
         try? BGTaskScheduler.shared.submit(request)
     }
 }

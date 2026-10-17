@@ -23,6 +23,7 @@ struct HealthKitExample2App: App {
                     .environmentObject(env.history)
                     .environmentObject(env.logger)
                     .environmentObject(env.config)
+                    .environmentObject(env.passiveSync)
             }
         }
         .onChange(of: scenePhase) { phase in
