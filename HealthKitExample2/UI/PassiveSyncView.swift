@@ -14,20 +14,27 @@ struct PassiveSyncView: View {
     @State private var selectedRecord: PassiveSyncRecord?
     @State private var showingClearAlert = false
     @State private var showingLldbHelp = false
-    @State private var exportURL: URL?
+    @State private var hasHealthAuth = true
 
     var body: some View {
         NavigationView {
             List {
                 conceptBanner
+                if !hasHealthAuth {
+                    permissionBanner
+                }
                 metricsSection
                 triggerControlsSection
                 lldbHelpSection
                 recordsListSection
             }
             .navigationTitle("Passive HealthKit")
+            .task {
+                hasHealthAuth = await HealthKitProvider.shared.hasRequestedAuthorization()
+            }
             .refreshable {
                 await passiveSync.sync(trigger: .manualTest)
+                hasHealthAuth = await HealthKitProvider.shared.hasRequestedAuthorization()
             }
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
@@ -73,10 +80,36 @@ struct PassiveSyncView: View {
         }
     }
 
+    private var permissionBanner: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text("Chưa cấp quyền Apple Health").font(.subheadline.weight(.semibold))
+                }
+                Text("App cần quyền đọc 'Số bước' để kiểm tra bước chân từ chip thiết bị. Hãy bấm nút dưới đây để cấp quyền.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button {
+                    Task {
+                        await passiveSync.requestHealthKitPermission()
+                        hasHealthAuth = await HealthKitProvider.shared.hasRequestedAuthorization()
+                    }
+                } label: {
+                    Text("Cấp quyền đọc Apple Health ngay")
+                        .font(.caption.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
     private var metricsSection: some View {
         Section("Thống kê hôm nay") {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                StatTile(title: "Bước máy (Hợp lệ)", value: "\(passiveSync.todayDeviceSteps)", systemImage: "applelogo")
+                StatTile(title: "Bước máy hôm nay", value: "\(passiveSync.todayDeviceSteps)", systemImage: "applelogo")
                 StatTile(title: "Bước rác bị lọc",
                          value: "\(passiveSync.todayManualStepsFiltered + passiveSync.todayThirdPartyStepsFiltered)",
                          systemImage: "xmark.bin")
@@ -97,8 +130,22 @@ struct PassiveSyncView: View {
 
     private var triggerControlsSection: some View {
         Section("Kiểm thử & Kích hoạt") {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Phạm vi quét HealthKit:").font(.caption).foregroundStyle(.secondary)
+                Picker("Phạm vi", selection: $passiveSync.selectedScope) {
+                    ForEach(QueryWindowScope.allCases) { scope in
+                        Text(scope.displayName).tag(scope)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            .padding(.vertical, 2)
+
             Button {
-                Task { await passiveSync.sync(trigger: .manualTest) }
+                Task {
+                    await passiveSync.sync(trigger: .manualTest)
+                    hasHealthAuth = await HealthKitProvider.shared.hasRequestedAuthorization()
+                }
             } label: {
                 HStack {
                     Image(systemName: "arrow.triangle.2.circlepath")
@@ -218,6 +265,9 @@ struct PassiveSyncView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
                 triggerBadge(record.trigger)
+                Text(record.queryScope)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Text(Format.time.string(from: record.timestamp))
                     .font(.caption.monospacedDigit())
@@ -225,9 +275,15 @@ struct PassiveSyncView: View {
             }
 
             HStack {
-                Text("+\(record.deviceSteps) bước máy")
+                Text("+\(record.deviceSteps) bước mới")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
+
+                if record.cumulativeStepsToday > 0 {
+                    Text("(Hôm nay: \(record.cumulativeStepsToday))")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
 
                 if record.rejectedSteps > 0 {
                     Text("(Loại: \(record.rejectedSteps))")
@@ -238,6 +294,13 @@ struct PassiveSyncView: View {
                 Spacer()
 
                 serverStatusBadge(record.serverStatus)
+            }
+
+            if let note = record.notes, record.deviceSteps == 0 {
+                Text(note)
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .lineLimit(2)
             }
 
             HStack {
@@ -309,20 +372,25 @@ private struct PassiveRecordDetailSheet: View {
                     InfoRow("Mã bản ghi", value: record.id.uuidString.prefix(8) + "...")
                     InfoRow("Thời gian ghi log", value: Format.dateTime.string(from: record.timestamp))
                     InfoRow("Nguồn kích hoạt", value: record.trigger.displayName)
-                    InfoRow("Khoảng truy vấn bắt đầu", value: Format.dateTime.string(from: record.queryStart))
-                    InfoRow("Khoảng truy vấn kết thúc", value: Format.dateTime.string(from: record.queryEnd))
+                    InfoRow("Phạm vi quét", value: record.queryScope)
+                    InfoRow("Khoảng bắt đầu", value: Format.dateTime.string(from: record.queryStart))
+                    InfoRow("Khoảng kết thúc", value: Format.dateTime.string(from: record.queryEnd))
                 }
 
                 Section("Phân loại bước chân") {
-                    InfoRow("Bước phần cứng hợp lệ", value: "\(record.deviceSteps)")
+                    InfoRow("Bước phần cứng mới", value: "\(record.deviceSteps)")
                     InfoRow(" • iPhone", value: "\(record.iPhoneSteps)")
                     InfoRow(" • Apple Watch", value: "\(record.watchSteps)")
+                    InfoRow("Tổng tích luỹ trong phạm vi", value: "\(record.cumulativeStepsToday)")
                     InfoRow("Bước nhập tay (Bị loại)", value: "\(record.manualSteps)")
                     InfoRow("Bước App thứ 3 (Bị loại)", value: "\(record.thirdPartySteps)")
                     if !record.thirdPartySources.isEmpty {
                         InfoRow("Nguồn app bên thứ 3", value: record.thirdPartySources.joined(separator: ", "))
                     }
-                    InfoRow("Tổng mẫu HealthKit", value: "\(record.sampleCount)")
+                    InfoRow("Số mẫu HealthKit", value: "\(record.sampleCount)")
+                    if record.rawHealthKitTotalSteps > 0 {
+                        InfoRow("HealthKit DB Statistics", value: "\(record.rawHealthKitTotalSteps) bước")
+                    }
                 }
 
                 Section("Thông tin gửi Server") {
@@ -334,6 +402,12 @@ private struct PassiveRecordDetailSheet: View {
                         InfoRow("Server nhận lúc", value: Format.time.string(from: receipt.serverReceivedAt))
                         InfoRow("Độ trễ khứ hồi", value: String(format: "%.1f ms", receipt.latencyMs))
                         InfoRow("Ghi chú Server", value: receipt.serverNote)
+                    }
+                }
+
+                if let note = record.notes {
+                    Section("Ghi chú & Chẩn đoán") {
+                        Text(note).font(.caption).foregroundStyle(.secondary)
                     }
                 }
 

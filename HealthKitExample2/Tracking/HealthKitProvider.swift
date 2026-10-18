@@ -35,6 +35,13 @@ nonisolated final class HealthKitProvider: @unchecked Sendable {
         return status == .unnecessary
     }
 
+    static func isAppleDeviceHardware(bundleIdentifier: String) -> Bool {
+        let bundleLower = bundleIdentifier.lowercased()
+        return bundleLower.hasPrefix("com.apple.health") ||
+               bundleLower.hasPrefix("com.apple.coremotion") ||
+               bundleLower.hasPrefix("com.apple.fitness")
+    }
+
     func summary(from: Date, to: Date) async -> HealthKitSummary? {
         guard let samples = await fetchStepSamples(from: from, to: to) else { return nil }
         var summary = HealthKitSummary(authorized: true, iPhoneSteps: 0, watchSteps: 0, thirdPartySteps: 0,
@@ -46,7 +53,7 @@ nonisolated final class HealthKitProvider: @unchecked Sendable {
             let product = sample.sourceRevision.productType ?? sample.device?.model ?? ""
             if (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool) == true {
                 summary.manualSteps += steps
-            } else if bundle.hasPrefix("com.apple.health") {
+            } else if Self.isAppleDeviceHardware(bundleIdentifier: bundle) {
                 if product.hasPrefix("Watch") { summary.watchSteps += steps } else { summary.iPhoneSteps += steps }
             } else {
                 summary.thirdPartySteps += steps
@@ -59,13 +66,36 @@ nonisolated final class HealthKitProvider: @unchecked Sendable {
 
     /// Fetches raw step count samples within a time window for analysis.
     func fetchStepSamples(from: Date, to: Date) async -> [HKQuantitySample]? {
-        guard isAvailable, await hasRequestedAuthorization() else { return nil }
+        guard isAvailable else { return nil }
+        if !(await hasRequestedAuthorization()) {
+            try? await requestAuthorization()
+        }
         return await withCheckedContinuation { continuation in
+            let predicate = HKQuery.predicateForSamples(withStart: from, end: to, options: [])
             let query = HKSampleQuery(sampleType: stepType,
-                                      predicate: HKQuery.predicateForSamples(withStart: from, end: to),
+                                      predicate: predicate,
                                       limit: HKObjectQueryNoLimit,
                                       sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]) { _, results, error in
                 continuation.resume(returning: error == nil ? (results as? [HKQuantitySample] ?? []) : nil)
+            }
+            store.execute(query)
+        }
+    }
+
+    /// Fetches cumulative step count via HKStatisticsQuery directly from HealthKit database.
+    func fetchCumulativeSteps(from: Date, to: Date) async -> Int {
+        guard isAvailable else { return 0 }
+        if !(await hasRequestedAuthorization()) {
+            try? await requestAuthorization()
+        }
+        return await withCheckedContinuation { continuation in
+            let predicate = HKQuery.predicateForSamples(withStart: from, end: to, options: [])
+            let query = HKStatisticsQuery(quantityType: stepType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, error in
+                guard error == nil, let sum = result?.sumQuantity() else {
+                    continuation.resume(returning: 0)
+                    return
+                }
+                continuation.resume(returning: Int(sum.doubleValue(for: .count())))
             }
             store.execute(query)
         }

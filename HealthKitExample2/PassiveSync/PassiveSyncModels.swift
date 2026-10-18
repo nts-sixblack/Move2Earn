@@ -52,6 +52,7 @@ nonisolated enum PassiveTriggerSource: String, Codable, CaseIterable, Sendable {
 
 nonisolated struct PassiveSampleItem: Codable, Hashable, Identifiable, Sendable {
     var id: UUID = UUID()
+    var sampleUUID: String?
     var startDate: Date
     var endDate: Date
     var steps: Int
@@ -101,8 +102,9 @@ nonisolated struct PassiveSyncRecord: Codable, Hashable, Identifiable, Sendable 
     var trigger: PassiveTriggerSource
     var queryStart: Date
     var queryEnd: Date
+    var queryScope: String = "today"
 
-    // Filtered step counts
+    // Filtered step counts for this sync run
     var deviceSteps: Int
     var iPhoneSteps: Int
     var watchSteps: Int
@@ -112,6 +114,8 @@ nonisolated struct PassiveSyncRecord: Codable, Hashable, Identifiable, Sendable 
 
     // Raw samples breakdown
     var sampleCount: Int
+    var rawHealthKitTotalSteps: Int = 0
+    var cumulativeStepsToday: Int = 0
     var samples: [PassiveSampleItem]
 
     // Server submission & response timing
@@ -214,6 +218,7 @@ nonisolated final class PassiveSyncStore: @unchecked Sendable {
         var totalDeviceStepsAllTime: Int = 0
         var totalManualStepsFilteredAllTime: Int = 0
         var totalThirdPartyStepsFilteredAllTime: Int = 0
+        var processedSampleIds: [String] = []
     }
 
     init(store: FileStore = FileStore.app.sub("passive_sync")) {
@@ -255,6 +260,28 @@ nonisolated final class PassiveSyncStore: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return (try? store.load(State.self, from: stateFile)) ?? State()
+    }
+
+    func loadProcessedSampleIds() -> Set<String> {
+        lock.lock()
+        defer { lock.unlock() }
+        let state = (try? store.load(State.self, from: stateFile)) ?? State()
+        return Set(state.processedSampleIds)
+    }
+
+    func markSamplesProcessed(_ ids: [String]) {
+        guard !ids.isEmpty else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        var state = (try? store.load(State.self, from: stateFile)) ?? State()
+        var currentSet = Set(state.processedSampleIds)
+        currentSet.formUnion(ids)
+        if currentSet.count > 10_000 {
+            state.processedSampleIds = Array(currentSet.suffix(8_000))
+        } else {
+            state.processedSampleIds = Array(currentSet)
+        }
+        try? store.save(state, to: stateFile)
     }
 
     func clearAll() {
