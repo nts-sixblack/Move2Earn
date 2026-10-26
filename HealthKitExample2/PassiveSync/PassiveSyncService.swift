@@ -54,6 +54,7 @@ final class PassiveSyncService: ObservableObject {
     private let logger: EventLogger
     private let now: () -> Date
     private let deviceId: () -> String
+    private var queueTail: Task<Void, Never>?
 
     init(store: PassiveSyncStore = PassiveSyncStore(),
          healthKit: HealthKitProvider = HealthKitProvider.shared,
@@ -82,15 +83,63 @@ final class PassiveSyncService: ObservableObject {
         reload()
     }
 
-    /// Performs passive synchronization triggered by HealthKit background delivery,
-    /// BGAppRefreshTask, BGProcessingTask, or manual user test.
+    /// Logs the samples added to HealthKit since the last run as a record waiting for upload.
+    /// Nothing is sent to the server; use `uploadPendingRecords()` or `sync(trigger:)` for that.
+    @discardableResult
+    func recordNewSamples(trigger: PassiveTriggerSource,
+                          customWindow: DateInterval? = nil,
+                          scopeOverride: QueryWindowScope? = nil) async -> PassiveSyncRecord? {
+        await serialized {
+            await self.logNewSamples(trigger: trigger, customWindow: customWindow,
+                                     scopeOverride: scopeOverride, skipIfEmpty: false)
+        }
+    }
+
+    /// Sends every record the server has not acknowledged yet (pending or failed), oldest first.
+    @discardableResult
+    func uploadPendingRecords() async -> [PassiveSyncRecord] {
+        await serialized { await self.uploadPending() }
+    }
+
+    /// Full passive sync triggered by HealthKit background delivery, BGAppRefreshTask,
+    /// BGProcessingTask, or manual user test. Before uploading it checks HealthKit once more
+    /// and logs any samples added since the last log, so the upload is not missing data.
     @discardableResult
     func sync(trigger: PassiveTriggerSource,
               customWindow: DateInterval? = nil,
-              scopeOverride: QueryWindowScope? = nil) async -> PassiveSyncRecord {
-        isSyncing = true
-        defer { isSyncing = false }
+              scopeOverride: QueryWindowScope? = nil) async -> [PassiveSyncRecord] {
+        await serialized {
+            let logged = await self.logNewSamples(trigger: trigger, customWindow: customWindow,
+                                                  scopeOverride: scopeOverride, skipIfEmpty: true)
+            let uploaded = await self.uploadPending()
+            let failed = uploaded.filter { !$0.serverStatus.isSuccess }.count
+            self.lastStatusMessage = "Đồng bộ \(trigger.shortTag): +\(logged?.deviceSteps ?? 0) bước máy mới, "
+                + "gửi \(uploaded.count - failed)/\(uploaded.count) bản ghi."
+            return uploaded
+        }
+    }
 
+    /// Runs `operation` after every earlier one has finished. Logging reads the HealthKit anchor
+    /// saved by the previous run and uploading reads the records it saved, so two overlapping
+    /// triggers must never interleave: they would count or upload the same samples twice.
+    private func serialized<T: Sendable>(_ operation: @escaping @MainActor () async -> T) async -> T {
+        let previous = queueTail
+        let run = Task { @MainActor in
+            await previous?.value
+            self.isSyncing = true
+            defer { self.isSyncing = false }
+            return await operation()
+        }
+        queueTail = Task { _ = await run.value }
+        return await run.value
+    }
+
+    /// Saves samples added since the last anchor as a pending record, then advances the anchor.
+    /// With `skipIfEmpty` no record is written when there is nothing new.
+    private func logNewSamples(trigger: PassiveTriggerSource,
+                               customWindow: DateInterval?,
+                               scopeOverride: QueryWindowScope?,
+                               skipIfEmpty: Bool) async -> PassiveSyncRecord? {
         let tNow = now()
         let activeScope = scopeOverride ?? selectedScope
         let (start, end) = determineTimeWindow(custom: customWindow, scope: activeScope, tNow: tNow)
@@ -100,15 +149,32 @@ final class PassiveSyncService: ObservableObject {
             try? await healthKit.requestAuthorization()
         }
 
-        // Query both cumulative steps and individual samples
+        // New samples come from the anchored query; the window is only used for the
+        // HealthKit statistics total shown alongside them. The first run starts counting
+        // from the beginning of today and that baseline is kept for every later run.
+        let saved = store.loadAnchor()
+        let baseline = saved?.baseline ?? Calendar.current.startOfDay(for: tNow)
         async let cumulativeTask = healthKit.fetchCumulativeSteps(from: start, to: end)
-        async let samplesTask = healthKit.fetchStepSamples(from: start, to: end)
+        async let changesTask = healthKit.fetchStepSampleChanges(since: saved?.anchor, startingFrom: baseline)
 
         let rawTotalSteps = await cumulativeTask
-        let samples = (await samplesTask) ?? []
+        let changes = await changesTask
+        let samples = changes?.added ?? []
 
-        let processedIds = store.loadProcessedSampleIds()
-        let (processed, newIds, totalGenuine) = classifySamples(samples, processedIds: processedIds)
+        if skipIfEmpty && samples.isEmpty {
+            // No samples means there is nothing to lose, so the anchor can move past deletions.
+            if let changes {
+                store.saveAnchor(changes.newAnchor, baseline: baseline)
+            }
+            logRecordResult(record: nil, trigger: trigger, queryFailed: changes == nil,
+                            deleted: changes?.deletedCount ?? 0)
+            return nil
+        }
+
+        let processed = classifySamples(samples)
+        let countedEarlier = records
+            .filter { $0.timestamp >= start && $0.timestamp <= end }
+            .reduce(0) { $0 + $1.deviceSteps }
 
         var record = PassiveSyncRecord(
             timestamp: tNow,
@@ -124,7 +190,7 @@ final class PassiveSyncService: ObservableObject {
             thirdPartySources: processed.thirdPartySources.sorted(),
             sampleCount: samples.count,
             rawHealthKitTotalSteps: rawTotalSteps,
-            cumulativeStepsToday: totalGenuine,
+            cumulativeStepsToday: countedEarlier + processed.deviceSteps,
             samples: processed.items,
             clientSentAt: tNow,
             serverStatus: .pending,
@@ -132,17 +198,44 @@ final class PassiveSyncService: ObservableObject {
             notes: nil
         )
 
-        buildDiagnosticsNote(&record, samplesCount: samples.count, rawTotal: rawTotalSteps, scope: activeScope)
+        buildDiagnosticsNote(&record, samplesCount: samples.count, rawTotal: rawTotalSteps, scope: activeScope,
+                             queryFailed: changes == nil)
 
+        // Advance the anchor only after the record is on disk: if the app dies in between,
+        // the next run re-reads the same samples instead of losing them.
         store.saveRecord(record)
-        store.markSamplesProcessed(newIds)
-
-        await uploadSubmission(record: &record, trigger: trigger, start: start, end: end, count: samples.count)
-        store.updateRecord(record)
+        if let changes {
+            store.saveAnchor(changes.newAnchor, baseline: baseline)
+        }
         reload()
 
-        logSyncResult(record: record, trigger: trigger, count: samples.count)
+        logRecordResult(record: record, trigger: trigger, queryFailed: changes == nil,
+                        deleted: changes?.deletedCount ?? 0)
         return record
+    }
+
+    /// Uploads waiting records oldest first and stops at the first failure: the rest are most
+    /// likely to fail the same way, and they stay waiting for the next run.
+    @discardableResult
+    private func uploadPending() async -> [PassiveSyncRecord] {
+        let waiting = store.loadRecords().filter(\.serverStatus.needsUpload).reversed()
+        var uploaded: [PassiveSyncRecord] = []
+        for var record in waiting {
+            await uploadSubmission(record: &record)
+            store.updateRecord(record)
+            uploaded.append(record)
+            if !record.serverStatus.isSuccess { break }
+        }
+        reload()
+
+        if !uploaded.isEmpty {
+            _ = logger.log("passiveUploadExecuted", [
+                "attempted": String(uploaded.count),
+                "succeeded": String(uploaded.filter(\.serverStatus.isSuccess).count),
+                "remaining": String(waiting.count - uploaded.filter(\.serverStatus.isSuccess).count)
+            ])
+        }
+        return uploaded
     }
 
     private func determineTimeWindow(custom: DateInterval?, scope: QueryWindowScope, tNow: Date) -> (Date, Date) {
@@ -161,11 +254,9 @@ final class PassiveSyncService: ObservableObject {
         return (start, tNow)
     }
 
-    private func classifySamples(_ samples: [HKQuantitySample],
-                                 processedIds: Set<String>) -> (ProcessedSamples, [String], Int) {
+    /// Splits newly added samples into device / manual / third-party steps.
+    private func classifySamples(_ samples: [HKQuantitySample]) -> ProcessedSamples {
         var res = ProcessedSamples()
-        var newIds: [String] = []
-        var totalGenuine = 0
 
         for sample in samples {
             let count = Int(sample.quantity.doubleValue(for: .count()))
@@ -175,36 +266,25 @@ final class PassiveSyncService: ObservableObject {
             let isUserEntered = (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool) == true
             let isApple = HealthKitProvider.isAppleDeviceHardware(bundleIdentifier: bundle)
             let sampleId = sample.uuid.uuidString
-            let isNew = !processedIds.contains(sampleId)
 
             if isUserEntered {
-                if isNew {
-                    res.manualSteps += count
-                    newIds.append(sampleId)
-                }
+                res.manualSteps += count
                 res.items.append(PassiveSampleItem(
                     sampleUUID: sampleId, startDate: sample.startDate, endDate: sample.endDate, steps: count,
                     sourceBundle: bundle, sourceName: name, isDeviceHardware: false,
                     isUserEntered: true, deviceModel: model
                 ))
             } else if isApple {
-                totalGenuine += count
-                if isNew {
-                    res.deviceSteps += count
-                    if model.hasPrefix("Watch") { res.watchSteps += count } else { res.iPhoneSteps += count }
-                    newIds.append(sampleId)
-                }
+                res.deviceSteps += count
+                if model.hasPrefix("Watch") { res.watchSteps += count } else { res.iPhoneSteps += count }
                 res.items.append(PassiveSampleItem(
                     sampleUUID: sampleId, startDate: sample.startDate, endDate: sample.endDate, steps: count,
                     sourceBundle: bundle, sourceName: name, isDeviceHardware: true,
                     isUserEntered: false, deviceModel: model
                 ))
             } else {
-                if isNew {
-                    res.thirdPartySteps += count
-                    res.thirdPartySources.insert(name)
-                    newIds.append(sampleId)
-                }
+                res.thirdPartySteps += count
+                res.thirdPartySources.insert(name)
                 res.items.append(PassiveSampleItem(
                     sampleUUID: sampleId, startDate: sample.startDate, endDate: sample.endDate, steps: count,
                     sourceBundle: bundle, sourceName: name, isDeviceHardware: false,
@@ -212,14 +292,16 @@ final class PassiveSyncService: ObservableObject {
                 ))
             }
         }
-        return (res, newIds, totalGenuine)
+        return res
     }
 
     private func buildDiagnosticsNote(_ record: inout PassiveSyncRecord, samplesCount: Int,
-                                      rawTotal: Int, scope: QueryWindowScope) {
-        if samplesCount == 0 {
+                                      rawTotal: Int, scope: QueryWindowScope, queryFailed: Bool) {
+        if queryFailed {
+            record.notes = "Không đọc được mẫu mới từ HealthKit. Lần đồng bộ sau sẽ thử lại từ cùng vị trí."
+        } else if samplesCount == 0 {
             if rawTotal > 0 {
-                record.notes = "HealthKit Statistics có \(rawTotal) bước, nhưng chưa có mẫu chi tiết nào được ghi vào DB."
+                record.notes = "Không có mẫu mới kể từ lần đồng bộ trước (HealthKit: \(rawTotal) bước trong \(scope.displayName))."
             } else {
                 record.notes = "Không tìm thấy bước chân trong \(scope.displayName). Hãy kiểm tra app Sức khoẻ."
             }
@@ -228,8 +310,8 @@ final class PassiveSyncService: ObservableObject {
         }
     }
 
-    private func uploadSubmission(record: inout PassiveSyncRecord, trigger: PassiveTriggerSource,
-                                  start: Date, end: Date, count: Int) async {
+    /// A retried record keeps its `recordId`, so the server can recognise a resend.
+    private func uploadSubmission(record: inout PassiveSyncRecord) async {
         let sentAt = now()
         record.clientSentAt = sentAt
         let submission = PassiveServerSubmission(
@@ -237,13 +319,13 @@ final class PassiveSyncService: ObservableObject {
             recordId: record.id,
             deviceId: deviceId(),
             clientSentAt: sentAt,
-            trigger: trigger,
-            periodStart: start,
-            periodEnd: end,
+            trigger: record.trigger,
+            periodStart: record.queryStart,
+            periodEnd: record.queryEnd,
             deviceSteps: record.deviceSteps,
             manualStepsFiltered: record.manualSteps,
             thirdPartyStepsFiltered: record.thirdPartySteps,
-            sampleCount: count
+            sampleCount: record.sampleCount
         )
 
         do {
@@ -256,21 +338,29 @@ final class PassiveSyncService: ObservableObject {
                 record.notes = "Thành công: Server ghi nhận lúc \(timeStr)"
             }
         } catch {
+            // The reason is kept in `serverStatus`; `notes` keeps the HealthKit diagnostics
+            // so they are still there once a retry succeeds.
             record.serverStatus = .failed(reason: error.localizedDescription)
-            record.notes = "Lỗi gửi server: \(error.localizedDescription)"
         }
     }
 
-    private func logSyncResult(record: PassiveSyncRecord, trigger: PassiveTriggerSource, count: Int) {
-        _ = logger.log("passiveSyncExecuted", [
+    /// `record` is nil when the run found nothing new and skipped writing a record.
+    private func logRecordResult(record: PassiveSyncRecord?, trigger: PassiveTriggerSource,
+                                 queryFailed: Bool, deleted: Int) {
+        _ = logger.log("passiveSamplesRecorded", [
             "trigger": trigger.rawValue,
-            "deviceSteps": String(record.deviceSteps),
-            "manualFiltered": String(record.manualSteps),
-            "thirdPartyFiltered": String(record.thirdPartySteps),
-            "samples": String(count),
-            "status": record.serverStatus.statusTitle
+            "deviceSteps": String(record?.deviceSteps ?? 0),
+            "manualFiltered": String(record?.manualSteps ?? 0),
+            "thirdPartyFiltered": String(record?.thirdPartySteps ?? 0),
+            "samples": String(record?.sampleCount ?? 0),
+            "deletedSamples": String(deleted),
+            "queryFailed": String(queryFailed),
+            "recordSaved": String(record != nil)
         ])
-        lastStatusMessage = "Đồng bộ \(trigger.shortTag): +\(record.deviceSteps) bước máy mới (Hôm nay: \(record.cumulativeStepsToday))."
+        if let record {
+            lastStatusMessage = "Ghi log \(trigger.shortTag): +\(record.deviceSteps) bước máy mới, chờ gửi server "
+                + "(Hôm nay: \(record.cumulativeStepsToday))."
+        }
     }
 
     /// Creates a simulated passive sync event for testing filtering and server timestamp logging
@@ -281,9 +371,14 @@ final class PassiveSyncService: ObservableObject {
                           manualSteps: Int,
                           thirdPartySteps: Int,
                           thirdPartyName: String = "CheatStepsApp") async -> PassiveSyncRecord {
-        isSyncing = true
-        defer { isSyncing = false }
+        await serialized {
+            await self.logAndUploadSimulated(trigger: trigger, deviceSteps: deviceSteps, manualSteps: manualSteps,
+                                             thirdPartySteps: thirdPartySteps, thirdPartyName: thirdPartyName)
+        }
+    }
 
+    private func logAndUploadSimulated(trigger: PassiveTriggerSource, deviceSteps: Int, manualSteps: Int,
+                                       thirdPartySteps: Int, thirdPartyName: String) async -> PassiveSyncRecord {
         let tNow = now()
         let start = tNow.addingTimeInterval(-30 * 60)
         let end = tNow
@@ -314,7 +409,7 @@ final class PassiveSyncService: ObservableObject {
             ))
         }
 
-        var record = PassiveSyncRecord(
+        let logged = PassiveSyncRecord(
             timestamp: tNow,
             trigger: trigger,
             queryStart: start,
@@ -336,10 +431,9 @@ final class PassiveSyncService: ObservableObject {
             notes: "Kịch bản test giả lập"
         )
 
-        store.saveRecord(record)
-        await uploadSubmission(record: &record, trigger: trigger, start: start, end: end, count: sampleItems.count)
-        store.updateRecord(record)
-        reload()
+        store.saveRecord(logged)
+        await uploadPending()
+        let record = records.first { $0.id == logged.id } ?? logged
 
         _ = logger.log("passiveSyncSimulated", [
             "trigger": trigger.rawValue,

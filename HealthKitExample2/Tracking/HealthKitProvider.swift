@@ -13,6 +13,13 @@
 import Foundation
 import HealthKit
 
+/// Result of an anchored step query: what changed since the previous anchor.
+nonisolated struct StepSampleChanges: @unchecked Sendable {
+    var added: [HKQuantitySample]
+    var deletedCount: Int
+    var newAnchor: HKQueryAnchor
+}
+
 nonisolated final class HealthKitProvider: @unchecked Sendable {
     static let shared = HealthKitProvider()
 
@@ -80,6 +87,22 @@ nonisolated final class HealthKitProvider: @unchecked Sendable {
             }
             store.execute(query)
         }
+    }
+
+    /// Step samples written to HealthKit since `anchor` (all of them when `anchor` is nil), restricted to
+    /// samples starting at or after `baseline`. Persist `newAnchor` only once the samples are recorded.
+    func fetchStepSampleChanges(since anchor: HKQueryAnchor?, startingFrom baseline: Date) async -> StepSampleChanges? {
+        guard isAvailable else { return nil }
+        if !(await hasRequestedAuthorization()) {
+            try? await requestAuthorization()
+        }
+        let predicate = HKQuery.predicateForSamples(withStart: baseline, end: nil, options: .strictStartDate)
+        let descriptor = HKAnchoredObjectQueryDescriptor(predicates: [.quantitySample(type: stepType, predicate: predicate)],
+                                                         anchor: anchor)
+        guard let result = try? await descriptor.result(for: store) else { return nil }
+        return StepSampleChanges(added: result.addedSamples.sorted { $0.startDate < $1.startDate },
+                                 deletedCount: result.deletedObjects.count,
+                                 newAnchor: result.newAnchor)
     }
 
     /// Fetches cumulative step count via HKStatisticsQuery directly from HealthKit database.

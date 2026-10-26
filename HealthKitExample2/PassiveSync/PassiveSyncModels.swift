@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import HealthKit
 
 nonisolated enum PassiveTriggerSource: String, Codable, CaseIterable, Sendable {
     case healthKitWake = "hk_background_delivery"
@@ -86,9 +87,17 @@ nonisolated enum PassiveServerStatus: Codable, Hashable, Sendable {
         return false
     }
 
+    /// Logged but not yet acknowledged by the server, so the next upload should send it.
+    var needsUpload: Bool {
+        switch self {
+        case .pending, .failed: true
+        case .success, .skipped: false
+        }
+    }
+
     var statusTitle: String {
         switch self {
-        case .pending: "Đang gửi server..."
+        case .pending: "Chờ gửi server"
         case .success(_, _, let latency): String(format: "Đã ghi nhận (%.0f ms)", latency)
         case .failed(let reason): "Lỗi: \(reason)"
         case .skipped(let reason): "Bỏ qua: \(reason)"
@@ -211,6 +220,7 @@ nonisolated final class PassiveSyncStore: @unchecked Sendable {
     private let store: FileStore
     private let recordsFile = "passive_records.json"
     private let stateFile = "passive_state.json"
+    private let anchorFile = "passive_anchor.json"
     private let lock = NSLock()
 
     struct State: Codable {
@@ -218,7 +228,11 @@ nonisolated final class PassiveSyncStore: @unchecked Sendable {
         var totalDeviceStepsAllTime: Int = 0
         var totalManualStepsFilteredAllTime: Int = 0
         var totalThirdPartyStepsFilteredAllTime: Int = 0
-        var processedSampleIds: [String] = []
+    }
+
+    private struct AnchorState: Codable {
+        var anchorData: Data
+        var baseline: Date
     }
 
     init(store: FileStore = FileStore.app.sub("passive_sync")) {
@@ -262,28 +276,26 @@ nonisolated final class PassiveSyncStore: @unchecked Sendable {
         return (try? store.load(State.self, from: stateFile)) ?? State()
     }
 
-    func loadProcessedSampleIds() -> Set<String> {
+    /// HealthKit query cursor plus the earliest sample start date it covers.
+    /// `nil` until the first anchored sync has been recorded.
+    func loadAnchor() -> (anchor: HKQueryAnchor, baseline: Date)? {
         lock.lock()
         defer { lock.unlock() }
-        let state = (try? store.load(State.self, from: stateFile)) ?? State()
-        return Set(state.processedSampleIds)
+        guard let saved = try? store.load(AnchorState.self, from: anchorFile),
+              let anchor = try? NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: saved.anchorData)
+        else { return nil }
+        return (anchor, saved.baseline)
     }
 
-    func markSamplesProcessed(_ ids: [String]) {
-        guard !ids.isEmpty else { return }
+    func saveAnchor(_ anchor: HKQueryAnchor, baseline: Date) {
         lock.lock()
         defer { lock.unlock() }
-        var state = (try? store.load(State.self, from: stateFile)) ?? State()
-        var currentSet = Set(state.processedSampleIds)
-        currentSet.formUnion(ids)
-        if currentSet.count > 10_000 {
-            state.processedSampleIds = Array(currentSet.suffix(8_000))
-        } else {
-            state.processedSampleIds = Array(currentSet)
-        }
-        try? store.save(state, to: stateFile)
+        guard let data = try? NSKeyedArchiver.archivedData(withRootObject: anchor, requiringSecureCoding: true) else { return }
+        try? store.save(AnchorState(anchorData: data, baseline: baseline), to: anchorFile)
     }
 
+    /// Deletes records and totals. The HealthKit anchor is kept on purpose so already
+    /// counted samples are not counted and uploaded a second time.
     func clearAll() {
         lock.lock()
         defer { lock.unlock() }

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import HealthKit
 import Testing
 @testable import HealthKitExample2
 
@@ -55,6 +56,23 @@ struct PassiveSyncTests {
 
         store.clearAll()
         #expect(store.loadRecords().isEmpty)
+    }
+
+    @Test
+    @MainActor
+    func storePersistsHealthKitAnchorAcrossClearAll() throws {
+        let root = FileStore.temporary()
+        let baseline = Date(timeIntervalSince1970: 1_700_000_000)
+        #expect(PassiveSyncStore(store: root).loadAnchor() == nil)
+
+        PassiveSyncStore(store: root).saveAnchor(HKQueryAnchor(fromValue: 42), baseline: baseline)
+        let reopened = PassiveSyncStore(store: root)
+        let saved = try #require(reopened.loadAnchor())
+        #expect(saved.anchor == HKQueryAnchor(fromValue: 42))
+        #expect(saved.baseline == baseline)
+
+        reopened.clearAll()
+        #expect(reopened.loadAnchor()?.anchor == HKQueryAnchor(fromValue: 42))
     }
 
     @Test
@@ -113,6 +131,43 @@ struct PassiveSyncTests {
 
     @Test
     @MainActor
+    func failedUploadsStayLoggedAndAreRetriedOldestFirst() async throws {
+        let root = FileStore.temporary()
+        let server = FlakyPassiveServer(wrapping: MockPassiveServer(
+            store: root.sub("server"),
+            now: { Date(timeIntervalSince1970: 1_700_000_000) },
+            simulateNetwork: false
+        ))
+        let service = PassiveSyncService(
+            store: PassiveSyncStore(store: root.sub("passive_sync")),
+            healthKit: HealthKitProvider.shared,
+            server: server,
+            logger: EventLogger(store: root.sub("logs")),
+            now: { Date(timeIntervalSince1970: 1_700_000_000) },
+            deviceId: { "test-device-uuid" }
+        )
+
+        // Server is down: both records are still logged, the first upload fails and the
+        // second one is not even attempted.
+        server.failing = true
+        let first = await service.simulateScenario(deviceSteps: 100, manualSteps: 0, thirdPartySteps: 0)
+        let second = await service.simulateScenario(deviceSteps: 200, manualSteps: 0, thirdPartySteps: 0)
+        #expect(service.records.count == 2)
+        #expect(service.records.allSatisfy { $0.serverStatus.needsUpload })
+        #expect(server.attemptedRecordIds == [first.id, first.id])
+        #expect(second.notes == "Kịch bản test giả lập")
+
+        // Server is back: the retry sends both, oldest first, and nothing is left waiting.
+        server.failing = false
+        let uploaded = await service.uploadPendingRecords()
+        #expect(uploaded.map(\.id) == [first.id, second.id])
+        #expect(service.records.allSatisfy { $0.serverStatus.isSuccess })
+        #expect(try await server.passiveReceipts().map(\.deviceSteps) == [200, 100]) // server stores newest first
+        #expect(await service.uploadPendingRecords().isEmpty)
+    }
+
+    @Test
+    @MainActor
     func passiveSyncTriggerSourcesAndFileReload() async throws {
         let root = FileStore.temporary()
         let store = PassiveSyncStore(store: root.sub("passive_sync"))
@@ -158,5 +213,28 @@ struct PassiveSyncTests {
         #expect(service2.todayDeviceSteps == 970)
         #expect(service2.todayManualStepsFiltered == 30)
         #expect(service2.todayThirdPartyStepsFiltered == 150)
+    }
+}
+
+/// Passive server that can be switched off to exercise the retry path.
+final class FlakyPassiveServer: PassiveSyncAPI {
+    struct Offline: Error {}
+
+    var failing = false
+    private(set) var attemptedRecordIds: [UUID] = []
+    private let wrapped: MockPassiveServer
+
+    init(wrapping wrapped: MockPassiveServer) {
+        self.wrapped = wrapped
+    }
+
+    func submitPassiveSync(_ submission: PassiveServerSubmission) async throws -> PassiveServerReceipt {
+        attemptedRecordIds.append(submission.recordId)
+        if failing { throw Offline() }
+        return try await wrapped.submitPassiveSync(submission)
+    }
+
+    func passiveReceipts() async throws -> [PassiveServerReceipt] {
+        try await wrapped.passiveReceipts()
     }
 }
